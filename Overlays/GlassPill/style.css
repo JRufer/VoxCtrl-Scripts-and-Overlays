@@ -1,0 +1,277 @@
+/*
+ * Styling for the "Glass Pill" custom overlay (see index.html for the
+ * markup and the full explanation of why this is CSS-only).
+ *
+ * Layout: a fixed-size frosted pill, mic ring on the left, status column
+ * on the right, "LIVE" badge in the top-right corner — matching the
+ * reference mockup. Everything reactive is driven by the six
+ * --voxctrl-* custom properties VoxCtrl writes onto the page root; no
+ * script is used or needed.
+ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.gp-scene {
+  display: inline-block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.gp-pill {
+  /* ---- Mutually-exclusive state flags (priority chain) ----
+   *    Multiple --voxctrl-* booleans can technically be 1 at once, but we
+   *    want exactly one "current" state driving color/text/animation.
+   *    Each tier is multiplied by (1 - every higher-priority tier). */
+  --mcp: var(--voxctrl-mcp-recording, 0);
+  --proc: calc(var(--voxctrl-processing, 0) * (1 - var(--mcp)));
+  --speak: calc(var(--voxctrl-speaking, 0) * (1 - var(--mcp)) * (1 - var(--proc)));
+  --rec: calc(
+    var(--voxctrl-recording, 0) * var(--voxctrl-audio-ready, 1) *
+    (1 - var(--mcp)) * (1 - var(--proc)) * (1 - var(--speak))
+  );
+  --init: calc(
+    var(--voxctrl-recording, 0) * (1 - var(--voxctrl-audio-ready, 1)) *
+    (1 - var(--mcp)) * (1 - var(--proc)) * (1 - var(--speak))
+  );
+  --active: max(
+    var(--voxctrl-recording, 0),
+                var(--voxctrl-processing, 0),
+                var(--voxctrl-speaking, 0),
+                var(--voxctrl-mcp-recording, 0)
+  );
+
+  /* ---- Living color: one blended state color, channel by channel ----
+   *    init = slate/gray (connecting), rec = indigo (listening),
+   *    proc = amber (transcribing), speak = teal (TTS talking back),
+   *    mcp = violet (MCP-triggered). Exactly one flag above is 1 at a
+   *    time, so this always resolves to one clean color. */
+  --wr: calc(148 * var(--init) + 99 * var(--rec) + 245 * var(--proc) + 20 * var(--speak) + 139 * var(--mcp));
+  --wg: calc(163 * var(--init) + 102 * var(--rec) + 158 * var(--proc) + 184 * var(--speak) + 92 * var(--mcp));
+  --wb: calc(184 * var(--init) + 241 * var(--rec) + 11 * var(--proc) + 166 * var(--speak) + 246 * var(--mcp));
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  width: 420px;
+  height: 140px;
+  padding: 0 26px 0 20px;
+  box-sizing: border-box;
+  border-radius: 70px;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.78) 0%,
+                              rgba(236, 240, 255, 0.55) 55%,
+                              rgba(255, 255, 255, 0.68) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(22px) saturate(160%);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  box-shadow:
+  0 22px 48px rgba(70, 80, 140, 0.22),
+  inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+
+  /* Entrance/exit: a soft "power-on" fade + scale, matching the calm,
+   *    airy material of a glass panel rather than anything mechanical. */
+  opacity: var(--active, 0);
+  transform: scale(calc(0.92 + 0.08 * var(--active, 0)));
+  transition: opacity 0.4s ease, transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================= Mic / audio ring ============================= */
+
+.gp-mic {
+  position: relative;
+  flex: 0 0 auto;
+  width: 96px;
+  height: 96px;
+}
+
+/* Concentric rings — the audio-reactive centerpiece. Each ring's scale
+ *  and opacity are driven directly by --voxctrl-audio-level (0..1,
+ *  already smoothed), with a different weight and transition speed per
+ *  ring so the pulse reads as layered/organic rather than one flat
+ *  bounce (a "radial pulse ring" visualizer, the natural fit for a
+ *  circular mic badge like this one). */
+.gp-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid rgba(var(--wr), var(--wg), var(--wb), 0.4);
+  pointer-events: none;
+}
+
+.gp-ring-outer {
+  inset: -12px;
+  opacity: calc(0.28 + var(--voxctrl-audio-level, 0) * 0.45);
+  transform: scale(calc(1 + var(--voxctrl-audio-level, 0) * 0.22));
+  transition: transform 0.16s linear, opacity 0.16s linear;
+}
+
+.gp-ring-inner {
+  inset: 0;
+  opacity: calc(0.5 + var(--voxctrl-audio-level, 0) * 0.4);
+  transform: scale(calc(1 + var(--voxctrl-audio-level, 0) * 0.32));
+  transition: transform 0.09s linear, opacity 0.09s linear;
+}
+
+.gp-mic-core {
+  position: absolute;
+  inset: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f1f3fc 55%, #e6eafc 100%);
+  /* Slow ambient "breathing glow" — idle-but-alive texture independent
+   *    of live audio, so the mic still feels active even in silence. */
+  animation: gp-glow-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes gp-glow-breathe {
+  0%, 100% {
+    box-shadow:
+    0 4px 10px rgba(80, 90, 160, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 0 16px 3px rgba(var(--wr), var(--wg), var(--wb), 0.16);
+  }
+  50% {
+    box-shadow:
+    0 4px 10px rgba(80, 90, 160, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 0 26px 8px rgba(var(--wr), var(--wg), var(--wb), 0.4);
+  }
+}
+
+/* The mic "glyph" itself — a simple rounded capsule bead, tinted by the
+ *  same living-color blend as everything else on the card. */
+.gp-mic-glyph {
+  position: relative;
+  width: 18px;
+  height: 28px;
+  border-radius: 9px;
+  background: rgb(var(--wr), var(--wg), var(--wb));
+  box-shadow: 0 3px 8px rgba(var(--wr), var(--wg), var(--wb), 0.5);
+}
+
+.gp-mic-glyph::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 6px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+/* ============================= Status column ============================= */
+
+.gp-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Fixed-height container so the absolutely-positioned label stack below
+ *  doesn't collapse to zero (an empty-height parent with only absolute
+ *  children is a classic trap here). */
+.gp-status {
+  position: relative;
+  height: 13px;
+  margin-bottom: 4px;
+}
+
+/* Opacity-stack text swap: every possible status string is pre-rendered
+ *  in the same spot; only the one whose state flag is 1 is visible. CSS
+ *  can't switch *which words* an element shows any other way. */
+.gp-status-text {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: rgb(var(--wr), var(--wg), var(--wb));
+  transition: opacity 0.15s ease;
+}
+.gp-status-text.s-init { opacity: var(--init, 0); }
+.gp-status-text.s-rec { opacity: var(--rec, 0); }
+.gp-status-text.s-proc { opacity: var(--proc, 0); }
+.gp-status-text.s-speak { opacity: var(--speak, 0); }
+.gp-status-text.s-mcp { opacity: var(--mcp, 0); }
+
+.gp-target {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.005em;
+  color: #333b63;
+  max-width: 230px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gp-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+/* Blinking telemetry — three dots pulsing on staggered timers, ambient
+ *  texture that reads as "still listening" without needing live audio. */
+.gp-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgb(var(--wr), var(--wg), var(--wb));
+  animation: gp-dot-pulse 1.4s ease-in-out infinite;
+}
+.gp-dot:nth-child(1) { animation-delay: 0s; }
+.gp-dot:nth-child(2) { animation-delay: 0.2s; }
+.gp-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes gp-dot-pulse {
+  0%, 100% { opacity: 0.28; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* ============================= Corner badge ============================= */
+
+.gp-badge {
+  position: absolute;
+  top: 18px;
+  right: 26px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gp-badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgb(var(--wr), var(--wg), var(--wb));
+  animation: gp-badge-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes gp-badge-blink {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.gp-badge-text {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  color: rgb(var(--wr), var(--wg), var(--wb));
+  opacity: 0.85;
+}

@@ -1,0 +1,81 @@
+<!--
+  VoxCtrl custom overlay — "Glass Pill"
+
+  A minimal glassy pill: a frosted, translucent capsule with a circular
+  mic/audio ring on the left and a two-line status readout on the right,
+  recreating the reference mockup (soft glass card, indigo mic bead,
+  "LISTENING" / "Focused Window", a small "LIVE" corner badge and a row
+  of three status dots).
+
+  TEMPLATE PLACEHOLDER
+  ─────────────────────
+  {{target}} — the active routing target's label (e.g. "Focused Window"),
+  substituted once when this HTML renders. ({{trigger}} carries the same
+  value if ever needed instead.)
+
+  NO <script> — BY DESIGN
+  ─────────────────────────
+  VoxCtrl's overlay window CSP is `script-src 'self'` with no
+  `unsafe-inline`, so any <script> here (in the file or injected at
+  runtime) is silently blocked — the overlay would just fail to animate,
+  with no visible error. Every behavior below comes from plain CSS
+  reading the six live custom properties VoxCtrl continuously writes onto
+  the page root:
+
+    --voxctrl-recording       0 or 1
+    --voxctrl-processing      0 or 1 — Whisper is transcribing
+    --voxctrl-speaking        0 or 1 — TTS is talking back
+    --voxctrl-mcp-recording   0 or 1 — an MCP client triggered recording
+    --voxctrl-audio-ready     0 or 1 — 0 while the mic is still connecting
+    --voxctrl-audio-level     0..1, the smoothed microphone level
+
+  See style.css for how these drive: the whole pill's fade+scale
+  entrance/exit, the status line's text swap, the living-color tint that
+  washes across the mic bead / rings / badge / dots, the two ambient
+  loops (a slow breathing glow on the mic, staggered blinking dots), and
+  the audio-reactive concentric pulse rings around the mic.
+-->
+<div class="gp-scene">
+  <div class="gp-pill">
+    <!-- Circular mic / audio-reactive element (left). Two concentric
+         rings pulse with --voxctrl-audio-level (a "radial pulse ring"
+         visualizer); the core bead behind them gets a slow independent
+         breathing glow so the mic never looks frozen even at silence. -->
+    <div class="gp-mic">
+      <span class="gp-ring gp-ring-outer"></span>
+      <span class="gp-ring gp-ring-inner"></span>
+      <span class="gp-mic-core">
+        <span class="gp-mic-glyph"></span>
+      </span>
+    </div>
+
+    <!-- Status column (right): a small tracked label that swaps text per
+         state (opacity-stack technique — every possible label is
+         pre-rendered in the same spot and only one is ever visible),
+         the bound target line, and three telemetry dots that pulse in a
+         staggered loop as ambient "still listening" texture. -->
+    <div class="gp-body">
+      <div class="gp-status">
+        <span class="gp-status-text s-init">CONNECTING</span>
+        <span class="gp-status-text s-rec">LISTENING</span>
+        <span class="gp-status-text s-proc">TRANSCRIBING</span>
+        <span class="gp-status-text s-speak">SPEAKING</span>
+        <span class="gp-status-text s-mcp">MCP ACTIVE</span>
+      </div>
+      <div class="gp-target">{{target}}</div>
+      <div class="gp-dots">
+        <span class="gp-dot"></span>
+        <span class="gp-dot"></span>
+        <span class="gp-dot"></span>
+      </div>
+    </div>
+
+    <!-- Corner chrome, top-right — a small blinking tally light plus a
+         "LIVE" label, both tinted by the same living-color blend as the
+         mic, so the whole card reads as one coherent state color. -->
+    <div class="gp-badge">
+      <span class="gp-badge-dot"></span>
+      <span class="gp-badge-text">LIVE</span>
+    </div>
+  </div>
+</div>

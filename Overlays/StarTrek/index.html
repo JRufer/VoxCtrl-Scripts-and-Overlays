@@ -1,0 +1,133 @@
+<!--
+  VoxCtrl custom overlay — "TNG LCARS"
+
+  A Star Trek: The Next Generation "LCARS" console panel: colored elbow
+  chrome, a segmented divider bar, three console pill-buttons, a live
+  audio timeline graph, a big "TARGET > {{target}}" readout, and two
+  telemetry read-out boxes — recreating the supplied reference mockup.
+
+  CONTRACT NOTES (see the overlays README for the full version)
+  ────────────────────────────────────────────────────────────
+  - No <script>: the overlay window's CSP is script-src 'self' with no
+    unsafe-inline, so every behavior here is plain CSS (var()/calc()/
+    @keyframes/transition) reading the live custom properties VoxCtrl
+    writes onto the page root:
+      --voxctrl-recording, --voxctrl-processing, --voxctrl-speaking,
+      --voxctrl-mcp-recording, --voxctrl-audio-ready, --voxctrl-audio-level
+  - {{target}} is the one substituted placeholder (the active routing
+    target's label, e.g. "Focused Window"). It appears twice below: once
+    in the top-right target chip, once in the big central readout.
+  - The three status-pill labels (INIT/REC/PROC/SPEAK/MCP) and the two
+    telemetry boxes are pre-rendered and stacked; style.css shows/hides
+    each with opacity driven by the state formulas computed once on
+    .tng-card (CSS can't swap text content based on a variable's value).
+-->
+<div class="tng-scene">
+  <div class="tng-card">
+
+    <!-- Left LCARS elbow column: stacked color blocks, static chrome. -->
+    <div class="tng-edge">
+      <span class="tng-edge-seg tng-c-blue"></span>
+      <span class="tng-edge-seg tng-c-lilac"></span>
+      <span class="tng-edge-seg tng-c-orange"></span>
+    </div>
+
+    <!-- Header: brand title + the target chip with an LCARS end-cap. -->
+    <div class="tng-header">
+      <span class="tng-title">VOICE ACTIVITY</span>
+    </div>
+    <div class="tng-target-chip">
+      <span class="tng-target-chip-label">{{target}}</span>
+      <span class="tng-target-chip-cap"></span>
+    </div>
+
+    <!-- LCARS "bar code" divider: unequal colored segments. -->
+    <div class="tng-divider">
+      <span class="tng-seg tng-seg-1 tng-c-blue"></span>
+      <span class="tng-seg tng-seg-2 tng-c-orange"></span>
+      <span class="tng-seg tng-seg-3 tng-c-blue"></span>
+      <span class="tng-seg tng-seg-4 tng-c-lilac"></span>
+      <span class="tng-seg tng-seg-5 tng-c-orange"></span>
+      <span class="tng-seg tng-seg-6 tng-c-blue"></span>
+    </div>
+
+    <!-- Console pill buttons. STATUS is a text-swap stack of every
+         possible state label; LINK glows when an MCP client is driving
+         the recording. -->
+    <div class="tng-pills">
+      <span class="tng-pill tng-pill-amber">TARGET</span>
+      <span class="tng-pill tng-pill-amber tng-pill-status">
+        <span class="tng-pill-text s-init">INIT</span>
+        <span class="tng-pill-text s-rec">REC</span>
+        <span class="tng-pill-text s-proc">PROC</span>
+        <span class="tng-pill-text s-speak">SPEAK</span>
+        <span class="tng-pill-text s-mcp">MCP</span>
+      </span>
+      <span class="tng-pill tng-pill-blue tng-pill-link">LINK</span>
+    </div>
+
+    <!-- The audio-reactive centerpiece: a HUD timeline graph containing
+         a continuous waveform silhouette driven by --voxctrl-audio-level. -->
+    <div class="tng-graph">
+      <div class="tng-graph-grid"></div>
+      <div class="tng-graph-band tng-band-1"></div>
+      <div class="tng-graph-band tng-band-2"></div>
+      <div class="tng-scanline"></div>
+
+      <div class="tng-wave">
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+        <span class="tng-bar"></span><span class="tng-bar"></span>
+      </div>
+
+      <span class="tng-axis-y tng-axis-y1">13:00</span>
+      <span class="tng-axis-y tng-axis-y2">0.00</span>
+      <span class="tng-axis-y tng-axis-y3">-1.00</span>
+
+      <span class="tng-axis-x tng-axis-x1">0</span>
+      <span class="tng-axis-x tng-axis-x2">1:00</span>
+      <span class="tng-axis-x tng-axis-x3">2:00</span>
+      <span class="tng-axis-x tng-axis-x4">13:00</span>
+      <span class="tng-axis-x tng-axis-x5">48:00</span>
+      <span class="tng-axis-x tng-axis-x6">50:00</span>
+      <span class="tng-axis-x tng-axis-title">TIME-SC</span>
+    </div>
+
+    <!-- Big central readout: the one piece of real content VoxCtrl gives
+         the overlay, shown as "TARGET > {{target}}". -->
+    <div class="tng-target-line">
+      <span class="tng-target-line-label">TARGET</span>
+      <span class="tng-target-line-arrow">&gt;</span>
+      <span class="tng-target-line-value">{{target}}</span>
+    </div>
+
+    <!-- Two telemetry read-outs, decorative "always doing something"
+         chrome with independently staggered blink timing. -->
+    <div class="tng-telemetry">
+      <div class="tng-tbox">
+        <div class="tng-tbox-head">DATA STREAM: <span class="tng-tstate">ACTIVE</span></div>
+        <div class="tng-tline">DE0X14G00&nbsp; SYNCHRONIZED</div>
+        <div class="tng-tline">DATA-0100&nbsp; BUFFER A</div>
+        <div class="tng-tline">DE0X14G01&nbsp; WAVEFORM LOCK</div>
+        <div class="tng-tline">SIGNAL&nbsp;&nbsp;&nbsp;&nbsp; NOMINAL</div>
+      </div>
+      <div class="tng-tbox">
+        <div class="tng-tbox-head">DESTINATION: BUFFER A</div>
+        <div class="tng-tline">DEST-01&nbsp;&nbsp; BUFFER A</div>
+        <div class="tng-tline">DEST-02&nbsp;&nbsp; ACTIVE</div>
+        <div class="tng-tline">DEST-03&nbsp;&nbsp; SUBSYS A</div>
+        <div class="tng-tline">DEST-04&nbsp;&nbsp; BUFFER A</div>
+      </div>
+    </div>
+
+  </div>
+</div>

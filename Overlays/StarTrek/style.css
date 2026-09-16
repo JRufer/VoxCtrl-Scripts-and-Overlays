@@ -1,0 +1,495 @@
+/*
+  VoxCtrl custom overlay — "TNG LCARS"
+  A Star Trek: The Next Generation LCARS-style console panel.
+
+  Fonts: system stacks only (overlays are assumed offline, no remote
+  fonts). Condensed-caps stack for LCARS chrome text, a plain rounded
+  sans for the big central readout, and monospace for telemetry.
+*/
+
+.tng-scene {
+  perspective: 1000px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.tng-card {
+  /* ---- State flags -----------------------------------------------
+     Mutually-exclusive priority chain (see animation-catalog.md
+     "core technique 1"): mcp beats processing beats speaking beats
+     recording, and recording splits into init (mic not ready yet)
+     vs. rec (ready). --active is the OR of the four raw booleans and
+     drives the whole-card entrance/exit. */
+  --mcp: var(--voxctrl-mcp-recording, 0);
+  --proc: calc(var(--voxctrl-processing, 0) * (1 - var(--mcp)));
+  --speak: calc(var(--voxctrl-speaking, 0) * (1 - var(--mcp)) * (1 - var(--proc)));
+  --rec: calc(var(--voxctrl-recording, 0) * var(--voxctrl-audio-ready, 1) * (1 - var(--mcp)) * (1 - var(--proc)) * (1 - var(--speak)));
+  --init: calc(var(--voxctrl-recording, 0) * (1 - var(--voxctrl-audio-ready, 1)) * (1 - var(--mcp)) * (1 - var(--proc)) * (1 - var(--speak)));
+  --active: max(
+    var(--voxctrl-recording, 0),
+    var(--voxctrl-processing, 0),
+    var(--voxctrl-speaking, 0),
+    var(--voxctrl-mcp-recording, 0)
+  );
+
+  /* ---- Living color (core technique 3) ----------------------------
+     One RGB triple, channel-blended by the mutually-exclusive flags
+     above, so the visualizer / glow / LINK pill all recolor from one
+     source of truth instead of five branches each:
+       init  amber   #f59e0b
+       rec   alert   #ef4444
+       proc  cyan    #38bdf8
+       speak magenta #ff6ec7 (echoes the reference mockup's waveform)
+       mcp   lilac   #b38cd9 */
+  --sr: calc(245 * var(--init) + 239 * var(--rec) + 56 * var(--proc) + 255 * var(--speak) + 179 * var(--mcp));
+  --sg: calc(158 * var(--init) + 68 * var(--rec) + 189 * var(--proc) + 110 * var(--speak) + 140 * var(--mcp));
+  --sb: calc(11 * var(--init) + 68 * var(--rec) + 248 * var(--proc) + 199 * var(--speak) + 217 * var(--mcp));
+
+  position: relative;
+  width: 480px;
+  height: 344px;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(140% 90% at 15% 0%, rgba(179, 140, 217, 0.08) 0%, transparent 55%),
+    linear-gradient(160deg, #0c0e16 0%, #05060a 55%, #090b12 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(var(--sr), var(--sg), var(--sb), calc(0.22 * var(--active))),
+    0 0 34px rgba(var(--sr), var(--sg), var(--sb), calc(0.28 * var(--active) * var(--tng-breathe, 1)));
+  font-family: 'Arial Narrow', 'Liberation Sans Narrow', 'Noto Sans', 'DejaVu Sans', sans-serif;
+
+  opacity: var(--active, 0);
+  transform: scale(calc(0.94 + 0.06 * var(--active, 0)));
+  transition:
+    opacity 0.32s ease,
+    transform 0.4s cubic-bezier(0.2, 0.85, 0.3, 1.15),
+    box-shadow 0.6s ease;
+
+  animation: tng-breathe 4.5s ease-in-out infinite;
+}
+
+/* Breathing glow (ambient #1): the outer glow ring's alpha oscillates
+   slowly via a helper custom property multiplied into the box-shadow
+   above, so it only shows while the card is actually active/glowing. */
+@keyframes tng-breathe {
+  0%, 100% { --tng-breathe: 0.55; }
+  50% { --tng-breathe: 1; }
+}
+
+/* ------------------------------------------------------------------
+   Segmented "LCARS power-on" entrance/exit: each chrome piece below
+   carries its own transform + opacity driven by the shared --active
+   variable, but with a slightly later transition-delay than the piece
+   before it, so the frame assembles itself edge-first, bar by bar,
+   before the readouts fade in on top. Exit reverses the same motion.
+   ------------------------------------------------------------------ */
+
+.tng-edge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 112px;
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px 0 0 0;
+  overflow: hidden;
+  transform-origin: top;
+  transform: scaleY(var(--active, 0));
+  opacity: var(--active, 0);
+  transition: transform 0.3s ease, opacity 0.2s ease;
+}
+.tng-edge-seg { flex: 1; }
+
+.tng-c-blue { background: #6fb8e6; }
+.tng-c-lilac { background: #b38cd9; }
+.tng-c-orange { background: #f2a765; }
+
+.tng-header {
+  position: absolute;
+  left: 30px;
+  top: 16px;
+  right: 190px;
+  opacity: var(--active, 0);
+  transform: translateY(calc(6px * (1 - var(--active, 0))));
+  transition: opacity 0.3s ease 0.04s, transform 0.34s ease 0.04s;
+}
+
+.tng-title {
+  display: block;
+  color: #f2a765;
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tng-target-chip {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  opacity: var(--active, 0);
+  transform: translateX(calc(10px * (1 - var(--active, 0))));
+  transition: opacity 0.3s ease 0.06s, transform 0.34s ease 0.06s;
+}
+
+.tng-target-chip-label {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  max-width: 150px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: rgba(111, 184, 230, 0.14);
+  border: 1px solid rgba(111, 184, 230, 0.4);
+  border-right: none;
+  color: #8fd0f0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tng-target-chip-cap {
+  width: 26px;
+  height: 100%;
+  border-radius: 0 15px 15px 0;
+  background: #6fb8e6;
+}
+
+.tng-divider {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 52px;
+  height: 9px;
+  display: flex;
+  gap: 3px;
+}
+
+.tng-seg {
+  height: 100%;
+  border-radius: 2px;
+  transform-origin: left;
+  transform: scaleX(var(--active, 0));
+  opacity: var(--active, 0);
+  transition: transform 0.3s ease, opacity 0.2s ease;
+}
+.tng-seg-1 { flex: 3; transition-delay: 0.04s; }
+.tng-seg-2 { flex: 2; transition-delay: 0.07s; }
+.tng-seg-3 { flex: 1; transition-delay: 0.1s; }
+.tng-seg-4 { flex: 2; transition-delay: 0.13s; }
+.tng-seg-5 { flex: 2; transition-delay: 0.16s; }
+.tng-seg-6 { flex: 3; transition-delay: 0.19s; }
+
+.tng-pills {
+  position: absolute;
+  right: 14px;
+  top: 68px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: var(--active, 0);
+  transform: translateX(calc(12px * (1 - var(--active, 0))));
+  transition: opacity 0.3s ease 0.16s, transform 0.34s ease 0.16s;
+}
+
+.tng-pill {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #0a0a0f;
+  white-space: nowrap;
+}
+.tng-pill-amber { background: #e8b45f; }
+.tng-pill-blue { background: #6fb8e6; }
+
+/* LINK pill glows lilac when an MCP client is driving the recording,
+   via the shared living-color blend — no separate branch needed. */
+.tng-pill-link {
+  transition: box-shadow 0.25s ease, background 0.25s ease;
+  box-shadow: 0 0 0 rgba(var(--sr), var(--sg), var(--sb), 0);
+}
+.tng-card { --mcp-glow: calc(var(--mcp) * 1); }
+.tng-pill-link {
+  box-shadow: 0 0 calc(10px * var(--mcp)) 1px rgba(var(--sr), var(--sg), var(--sb), calc(0.9 * var(--mcp)));
+}
+
+/* STATUS pill: fixed size because its children are all absolutely
+   positioned (an absolutely-positioned child does not contribute to
+   parent size) — without this the pill would collapse to zero. */
+.tng-pill-status {
+  position: relative;
+  width: 46px;
+}
+.tng-pill-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s ease;
+}
+.tng-pill-text.s-init { opacity: var(--init, 0); }
+.tng-pill-text.s-rec { opacity: var(--rec, 0); }
+.tng-pill-text.s-proc { opacity: var(--proc, 0); }
+.tng-pill-text.s-speak { opacity: var(--speak, 0); }
+.tng-pill-text.s-mcp { opacity: var(--mcp, 0); }
+
+/* ------------------------------------------------------------------
+   Graph panel: HUD timeline chrome + the continuous-waveform
+   audio visualizer.
+   ------------------------------------------------------------------ */
+
+.tng-graph {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 96px;
+  height: 114px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #06070c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  opacity: var(--active, 0);
+  transform: scale(calc(0.985 + 0.015 * var(--active, 0)));
+  transition: opacity 0.3s ease 0.22s, transform 0.34s ease 0.22s;
+}
+
+.tng-graph-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px 22px);
+}
+
+.tng-graph-band {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  background: rgba(242, 167, 101, 0.08);
+}
+.tng-band-1 { left: 58%; }
+.tng-band-2 { left: 74%; }
+
+/* Scanline drift (ambient #2), adapted to sweep left-to-right across
+   the timeline rather than top-to-bottom, since this panel reads as a
+   time axis rather than a CRT screen. */
+.tng-scanline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50px;
+  background: linear-gradient(90deg, transparent 0%, rgba(143, 208, 240, 0.1) 50%, transparent 100%);
+  animation: tng-scanline-drift 5.5s linear infinite;
+}
+@keyframes tng-scanline-drift {
+  from { left: -60px; }
+  to { left: 470px; }
+}
+
+.tng-wave {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 0;
+  bottom: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tng-bar {
+  width: 8px;
+  border-radius: 4px;
+  background: rgb(var(--sr), var(--sg), var(--sb));
+  box-shadow: 0 0 6px rgba(var(--sr), var(--sg), var(--sb), 0.5);
+  /* Base amplitude comes from this bar's fixed envelope weight (--e,
+     center-weighted so the middle of the waveform reads loudest)
+     times the live smoothed audio level — under 150ms via the
+     transition below so it tracks speech in near real time. */
+  height: calc(6px + var(--e, 0.3) * var(--voxctrl-audio-level, 0) * 76px);
+  transition: height 0.09s linear;
+  /* Idle wobble: a slow scaleY breathing motion, independent of audio,
+     so the waveform is never perfectly flat at rest — phase-offset
+     per bar via its own --e so the whole row doesn't pulse in unison. */
+  animation: tng-wave-idle 4.2s ease-in-out infinite;
+  animation-delay: calc(var(--e, 0.3) * -3.4s);
+}
+@keyframes tng-wave-idle {
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.12); }
+}
+
+.tng-wave > span:nth-child(1) { --e: 0.2; }
+.tng-wave > span:nth-child(2) { --e: 0.27; }
+.tng-wave > span:nth-child(3) { --e: 0.35; }
+.tng-wave > span:nth-child(4) { --e: 0.44; }
+.tng-wave > span:nth-child(5) { --e: 0.53; }
+.tng-wave > span:nth-child(6) { --e: 0.63; }
+.tng-wave > span:nth-child(7) { --e: 0.73; }
+.tng-wave > span:nth-child(8) { --e: 0.82; }
+.tng-wave > span:nth-child(9) { --e: 0.9; }
+.tng-wave > span:nth-child(10) { --e: 0.96; }
+.tng-wave > span:nth-child(11) { --e: 1; }
+.tng-wave > span:nth-child(12) { --e: 1; }
+.tng-wave > span:nth-child(13) { --e: 1; }
+.tng-wave > span:nth-child(14) { --e: 1; }
+.tng-wave > span:nth-child(15) { --e: 0.96; }
+.tng-wave > span:nth-child(16) { --e: 0.9; }
+.tng-wave > span:nth-child(17) { --e: 0.82; }
+.tng-wave > span:nth-child(18) { --e: 0.73; }
+.tng-wave > span:nth-child(19) { --e: 0.63; }
+.tng-wave > span:nth-child(20) { --e: 0.53; }
+.tng-wave > span:nth-child(21) { --e: 0.44; }
+.tng-wave > span:nth-child(22) { --e: 0.35; }
+.tng-wave > span:nth-child(23) { --e: 0.27; }
+.tng-wave > span:nth-child(24) { --e: 0.2; }
+
+.tng-axis-y {
+  position: absolute;
+  right: 6px;
+  color: rgba(143, 208, 240, 0.55);
+  font-family: 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  font-size: 7px;
+  letter-spacing: 0.02em;
+}
+.tng-axis-y1 { top: 4px; }
+.tng-axis-y2 { top: 50%; transform: translateY(-50%); }
+.tng-axis-y3 { bottom: 18px; }
+
+.tng-axis-x {
+  position: absolute;
+  bottom: 3px;
+  color: rgba(255, 255, 255, 0.32);
+  font-family: 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  font-size: 6.5px;
+}
+.tng-axis-x1 { left: 12px; }
+.tng-axis-x2 { left: 20%; }
+.tng-axis-x3 { left: 37%; }
+.tng-axis-x4 { left: 54%; }
+.tng-axis-x5 { left: 71%; }
+.tng-axis-x6 { left: 86%; }
+.tng-axis-title {
+  right: 8px;
+  bottom: auto;
+  top: 4px;
+  left: auto;
+  color: rgba(255, 255, 255, 0.28);
+  letter-spacing: 0.08em;
+}
+
+/* ------------------------------------------------------------------
+   Central readout + telemetry boxes.
+   ------------------------------------------------------------------ */
+
+.tng-target-line {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 218px;
+  text-align: center;
+  font-family: 'Trebuchet MS', 'Verdana', 'DejaVu Sans', sans-serif;
+  opacity: var(--active, 0);
+  transition: opacity 0.35s ease 0.28s;
+}
+.tng-target-line-label {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 20px;
+  font-weight: 700;
+}
+.tng-target-line-arrow {
+  color: #6fb8e6;
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 8px;
+}
+.tng-target-line-value {
+  color: #a9dcf5;
+  font-size: 22px;
+  font-weight: 700;
+  max-width: 340px;
+  display: inline-block;
+  vertical-align: bottom;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tng-telemetry {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: 264px;
+  bottom: 14px;
+  display: flex;
+  gap: 10px;
+  opacity: var(--active, 0);
+  transform: translateY(calc(8px * (1 - var(--active, 0))));
+  transition: opacity 0.35s ease 0.32s, transform 0.38s ease 0.32s;
+}
+
+.tng-tbox {
+  flex: 1;
+  min-width: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 5px 8px;
+  overflow: hidden;
+}
+
+.tng-tbox-head {
+  color: #f2a765;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.tng-tstate { color: rgb(var(--sr), var(--sg), var(--sb)); }
+
+.tng-tline {
+  color: rgba(169, 220, 245, 0.65);
+  font-family: 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  font-size: 7px;
+  line-height: 1.55;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Blinking telemetry (ambient #3): each line flickers on its own
+     staggered timer so the panel reads as quietly, continuously busy. */
+  animation: tng-tline-blink 2.8s ease-in-out infinite;
+}
+.tng-tline:nth-child(2) { animation-delay: -0.4s; }
+.tng-tline:nth-child(3) { animation-delay: -1.1s; }
+.tng-tline:nth-child(4) { animation-delay: -1.7s; }
+.tng-tline:nth-child(5) { animation-delay: -2.3s; }
+
+@keyframes tng-tline-blink {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.95; }
+}

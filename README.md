@@ -1,15 +1,6 @@
-# VoxCtrl-Scripts
-A collection of scripts to trigger with VoxCtrl voice commands.
+## Custom Scripts & Custom Overlays
 
+This repo is a collection of scripts and Overlay designs that users can use to customize 
+their VoxCtrl experience. 
 
-* switch-audio-device.sh {text}
-**Switch audio device**
-This script let's you quick switch between two different audio input and output devices. Call the command to switch or call it and say "headphone" or "speakers“ to pick your audio devices. 
-examples:
- - VoxCtrl <COMMAND>
- - VoxCtrl <COMMAND> headphones
- - VoxCtrl <COMMAND> speakers
-
- ---
- 
- 
+Check the README.md in each folder for information on each of the options for users to try.
