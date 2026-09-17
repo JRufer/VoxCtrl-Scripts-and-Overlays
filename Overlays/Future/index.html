@@ -1,0 +1,177 @@
+<!--
+  VoxCtrl custom overlay — "NeonCircuit"
+
+  A short, wide cyberpunk HUD card: dark background, neon-yellow accents,
+  a faded orthogonal circuit-board pattern etched into the background with
+  slow traveling light-pulses along the traces, and a center audio-reactive
+  waveform silhouette. The command line at the bottom reads the live
+  routing target from VoxCtrl's {{target}} placeholder and swaps its
+  action word (DICTATE / PROCESSING / SPEAKING / …) with the app's state.
+
+  No <script> anywhere — VoxCtrl's overlay window CSP (script-src 'self',
+  no unsafe-inline) blocks it silently. Every bit of motion here is plain
+  CSS reacting to the --voxctrl-* custom properties VoxCtrl continuously
+  writes onto the page root:
+
+    --voxctrl-recording       0 or 1
+    --voxctrl-processing      0 or 1 — Whisper is transcribing
+    --voxctrl-speaking        0 or 1 — TTS is talking back
+    --voxctrl-mcp-recording   0 or 1 — an MCP client triggered recording
+    --voxctrl-audio-ready     0 or 1 — 0 while the mic is still connecting
+    --voxctrl-audio-level     0..1, the smoothed microphone level
+
+  See style.css for how these drive the entrance/exit wipe, the status
+  stamp, the command line, and the waveform.
+-->
+<link rel="stylesheet" href="style.css">
+
+<div class="vc-cyber-scene">
+  <div class="vc-cyber-card">
+
+    <!-- Faded circuit-board background: a set of etched orthogonal traces
+         (always faintly visible) plus a <use> "pulse" copy of each trace
+         that travels the same path via an animated stroke-dashoffset —
+         this is the "shimmer" the background slowly does. -->
+    <svg class="vc-cyber-circuit" viewBox="0 0 560 110" preserveAspectRatio="none" aria-hidden="true">
+      <g class="vc-circuit-traces">
+        <path id="ct0" class="vc-circuit-trace" d="M200,20 L190,20 L190,10 L200,10 L200,0 L240,0 L260,0" />
+        <path id="ct1" class="vc-circuit-trace" d="M50,80 L60,80 L60,70 L20,70 L0,70" />
+        <path id="ct2" class="vc-circuit-trace" d="M340,10 L360,10 L380,10 L390,10 L410,10 L450,10 L450,50 L410,50" />
+        <path id="ct3" class="vc-circuit-trace" d="M230,40 L230,60 L260,60 L290,60 L290,90" />
+        <path id="ct4" class="vc-circuit-trace" d="M380,10 L360,10 L360,30 L360,70" />
+        <path id="ct5" class="vc-circuit-trace" d="M20,100 L20,110 L50,110 L90,110" />
+        <path id="ct6" class="vc-circuit-trace" d="M40,10 L30,10 L0,10 L0,50 L40,50 L40,20" />
+        <path id="ct7" class="vc-circuit-trace" d="M10,70 L20,70 L40,70 L40,90 L0,90" />
+        <path id="ct8" class="vc-circuit-trace" d="M50,20 L20,20 L20,0 L0,0 L0,40 L0,60" />
+        <path id="ct9" class="vc-circuit-trace" d="M50,20 L70,20 L90,20 L100,20 L130,20" />
+        <path id="ct10" class="vc-circuit-trace" d="M390,90 L390,80 L350,80 L310,80 L270,80 L260,80" />
+        <path id="ct11" class="vc-circuit-trace" d="M130,70 L140,70 L160,70 L190,70 L190,80" />
+        <path id="ct12" class="vc-circuit-trace" d="M550,30 L520,30 L520,0 L510,0 L480,0 L470,0 L470,30" />
+        <path id="ct13" class="vc-circuit-trace" d="M300,110 L280,110 L280,80 L290,80 L290,110" />
+        <path id="ct14" class="vc-circuit-trace" d="M410,10 L390,10 L370,10 L340,10 L340,30 L300,30" />
+        <path id="ct15" class="vc-circuit-trace" d="M470,30 L440,30 L440,40 L400,40 L370,40" />
+        <path id="ct16" class="vc-circuit-trace" d="M280,110 L280,80 L290,80 L310,80 L350,80 L350,90" />
+        <path id="ct17" class="vc-circuit-trace" d="M300,100 L300,110 L290,110 L290,90 L270,90 L240,90" />
+        <path id="ct18" class="vc-circuit-trace" d="M50,110 L40,110 L40,100 L80,100 L80,80 L40,80" />
+        <path id="ct19" class="vc-circuit-trace" d="M420,50 L400,50 L390,50 L370,50 L350,50" />
+        <path id="ct20" class="vc-circuit-trace" d="M520,30 L550,30 L560,30" />
+        <path id="ct21" class="vc-circuit-trace" d="M530,20 L530,0 L510,0" />
+      </g>
+
+      <g class="vc-circuit-pulses">
+        <use href="#ct0" class="vc-circuit-pulse" style="--len:100" />
+        <use href="#ct1" class="vc-circuit-pulse" style="--len:80" />
+        <use href="#ct2" class="vc-circuit-pulse" style="--len:190" />
+        <use href="#ct3" class="vc-circuit-pulse" style="--len:110" />
+        <use href="#ct4" class="vc-circuit-pulse" style="--len:80" />
+        <use href="#ct5" class="vc-circuit-pulse" style="--len:80" />
+        <use href="#ct6" class="vc-circuit-pulse" style="--len:150" />
+        <use href="#ct7" class="vc-circuit-pulse" style="--len:90" />
+        <use href="#ct8" class="vc-circuit-pulse" style="--len:130" />
+        <use href="#ct9" class="vc-circuit-pulse" style="--len:80" />
+        <use href="#ct10" class="vc-circuit-pulse" style="--len:140" />
+        <use href="#ct11" class="vc-circuit-pulse" style="--len:70" />
+        <use href="#ct12" class="vc-circuit-pulse" style="--len:140" />
+        <use href="#ct13" class="vc-circuit-pulse" style="--len:90" />
+        <use href="#ct14" class="vc-circuit-pulse" style="--len:130" />
+        <use href="#ct15" class="vc-circuit-pulse" style="--len:110" />
+        <use href="#ct16" class="vc-circuit-pulse" style="--len:110" />
+        <use href="#ct17" class="vc-circuit-pulse" style="--len:90" />
+        <use href="#ct18" class="vc-circuit-pulse" style="--len:120" />
+        <use href="#ct19" class="vc-circuit-pulse" style="--len:70" />
+        <use href="#ct20" class="vc-circuit-pulse" style="--len:40" />
+        <use href="#ct21" class="vc-circuit-pulse" style="--len:40" />
+      </g>
+
+      <g class="vc-circuit-pads">
+        <circle class="vc-circuit-pad" cx="200" cy="20" r="2.1" /><circle class="vc-circuit-pad" cx="190" cy="10" r="1.3" />
+        <circle class="vc-circuit-pad" cx="200" cy="0" r="2.1" /><circle class="vc-circuit-pad" cx="260" cy="0" r="2.1" />
+        <circle class="vc-circuit-pad" cx="50" cy="80" r="1.3" /><circle class="vc-circuit-pad" cx="60" cy="70" r="1.7" />
+        <circle class="vc-circuit-pad" cx="0" cy="70" r="1.3" /><circle class="vc-circuit-pad" cx="340" cy="10" r="2.1" />
+        <circle class="vc-circuit-pad" cx="380" cy="10" r="1.3" /><circle class="vc-circuit-pad" cx="410" cy="10" r="1.3" />
+        <circle class="vc-circuit-pad" cx="450" cy="50" r="1.3" /><circle class="vc-circuit-pad" cx="230" cy="40" r="1.3" />
+        <circle class="vc-circuit-pad" cx="260" cy="60" r="1.7" /><circle class="vc-circuit-pad" cx="290" cy="90" r="2.1" />
+        <circle class="vc-circuit-pad" cx="360" cy="30" r="2.1" /><circle class="vc-circuit-pad" cx="20" cy="100" r="1.3" />
+        <circle class="vc-circuit-pad" cx="50" cy="110" r="2.1" /><circle class="vc-circuit-pad" cx="40" cy="10" r="1.3" />
+        <circle class="vc-circuit-pad" cx="0" cy="10" r="1.7" /><circle class="vc-circuit-pad" cx="40" cy="50" r="2.1" />
+        <circle class="vc-circuit-pad" cx="10" cy="70" r="2.1" /><circle class="vc-circuit-pad" cx="40" cy="70" r="2.1" />
+        <circle class="vc-circuit-pad" cx="0" cy="90" r="2.1" /><circle class="vc-circuit-pad" cx="50" cy="20" r="1.7" />
+        <circle class="vc-circuit-pad" cx="20" cy="0" r="1.3" /><circle class="vc-circuit-pad" cx="0" cy="40" r="2.1" />
+        <circle class="vc-circuit-pad" cx="90" cy="20" r="1.3" /><circle class="vc-circuit-pad" cx="130" cy="20" r="1.3" />
+        <circle class="vc-circuit-pad" cx="390" cy="90" r="1.3" /><circle class="vc-circuit-pad" cx="350" cy="80" r="1.7" />
+        <circle class="vc-circuit-pad" cx="270" cy="80" r="1.3" /><circle class="vc-circuit-pad" cx="130" cy="70" r="1.3" />
+        <circle class="vc-circuit-pad" cx="160" cy="70" r="2.1" /><circle class="vc-circuit-pad" cx="190" cy="80" r="1.7" />
+        <circle class="vc-circuit-pad" cx="550" cy="30" r="2.1" /><circle class="vc-circuit-pad" cx="520" cy="0" r="1.3" />
+        <circle class="vc-circuit-pad" cx="480" cy="0" r="1.3" /><circle class="vc-circuit-pad" cx="470" cy="30" r="1.7" />
+        <circle class="vc-circuit-pad" cx="300" cy="110" r="1.7" /><circle class="vc-circuit-pad" cx="280" cy="80" r="2.1" />
+        <circle class="vc-circuit-pad" cx="290" cy="110" r="2.1" /><circle class="vc-circuit-pad" cx="370" cy="10" r="2.1" />
+        <circle class="vc-circuit-pad" cx="340" cy="30" r="2.1" /><circle class="vc-circuit-pad" cx="440" cy="40" r="1.3" />
+        <circle class="vc-circuit-pad" cx="370" cy="40" r="2.1" /><circle class="vc-circuit-pad" cx="280" cy="110" r="1.7" />
+        <circle class="vc-circuit-pad" cx="290" cy="80" r="1.7" /><circle class="vc-circuit-pad" cx="300" cy="100" r="2.1" />
+        <circle class="vc-circuit-pad" cx="270" cy="90" r="2.1" /><circle class="vc-circuit-pad" cx="40" cy="100" r="1.7" />
+        <circle class="vc-circuit-pad" cx="80" cy="80" r="2.1" /><circle class="vc-circuit-pad" cx="420" cy="50" r="1.3" />
+        <circle class="vc-circuit-pad" cx="390" cy="50" r="2.1" /><circle class="vc-circuit-pad" cx="350" cy="50" r="2.1" />
+        <circle class="vc-circuit-pad" cx="520" cy="30" r="1.7" /><circle class="vc-circuit-pad" cx="560" cy="30" r="2.1" />
+        <circle class="vc-circuit-pad" cx="530" cy="20" r="1.3" /><circle class="vc-circuit-pad" cx="510" cy="0" r="1.7" />
+      </g>
+    </svg>
+
+    <!-- Occasional cyberpunk signal-glitch flicker, rare and brief. -->
+    <div class="vc-cyber-glitch"></div>
+
+    <!-- Slow scanline drifting top to bottom. -->
+    <div class="vc-cyber-scanline"></div>
+
+    <!-- HUD corner brackets. -->
+    <span class="vc-cyber-corner tl"></span>
+    <span class="vc-cyber-corner tr"></span>
+    <span class="vc-cyber-corner bl"></span>
+    <span class="vc-cyber-corner br"></span>
+
+    <!-- Header: brand + status stamp. Three (five, here) pre-rendered
+         labels stacked in the same box, each shown by opacity — CSS can't
+         swap text content on a variable, only numeric properties. -->
+    <div class="vc-cyber-header">
+      <span class="vc-cyber-brand">VOXCTRL</span>
+      <span class="vc-cyber-stamp">
+        <span class="vc-cyber-stamp-dot"></span>
+        <span class="vc-cyber-stamp-text s-init">INIT</span>
+        <span class="vc-cyber-stamp-text s-rec">REC</span>
+        <span class="vc-cyber-stamp-text s-proc">PROC</span>
+        <span class="vc-cyber-stamp-text s-speak">TTS</span>
+        <span class="vc-cyber-stamp-text s-mcp">MCP</span>
+      </span>
+    </div>
+
+    <!-- Audio-reactive waveform silhouette: 64 thin bars, each with a
+         fixed --e envelope weight (see style.css) plus a staggered idle
+         wobble, scaled up live by --voxctrl-audio-level. -->
+    <div class="vc-cyber-wave">
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Command line: {{target}} is VoxCtrl's live routing-target
+         placeholder; the action word to its right swaps with state using
+         the same stacked-opacity trick as the status stamp above. -->
+    <div class="vc-cyber-command">
+      <span class="vc-cyber-cmd-label">TARGET</span>
+      <span class="vc-cyber-cmd-target">{{target}}</span>
+      <span class="vc-cyber-cmd-arrow">&gt;&gt;</span>
+      <span class="vc-cyber-cmd-action">
+        <span class="a-init">INITIALIZING</span>
+        <span class="a-rec">DICTATE</span>
+        <span class="a-proc">PROCESSING</span>
+        <span class="a-speak">SPEAKING</span>
+        <span class="a-mcp">MCP TASK</span>
+      </span>
+    </div>
+
+  </div>
+</div>

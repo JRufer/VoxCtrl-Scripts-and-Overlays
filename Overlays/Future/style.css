@@ -1,0 +1,451 @@
+/*
+  Styling for the "NeonCircuit" overlay (see index.html for the full
+  explanation). Dark cyberpunk HUD card, short and wide, neon-yellow
+  accents, a faded circuit-board background that slowly shimmers, and a
+  center audio-reactive waveform. Pure CSS — no <script> (blocked by the
+  overlay window's CSP) — every reaction to VoxCtrl's live state comes
+  from the --voxctrl-* custom properties written onto the page root,
+  read here with var()/calc().
+*/
+
+/* Registered so keyframes can animate these as smooth numbers instead of
+   jumping between discrete values — supported in the Chromium-based
+   webview VoxCtrl renders in. */
+@property --idle-wobble {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0.4;
+}
+@property --breathe {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+.vc-cyber-scene {
+  perspective: 900px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.vc-cyber-card {
+  /* ---- State priority chain (see animation-catalog technique #1) ----
+     Exactly one of these should be 1 at a time; everything below reads
+     these instead of branching on the raw --voxctrl-* flags directly. */
+  --mcp: var(--voxctrl-mcp-recording, 0);
+  --proc: calc(var(--voxctrl-processing, 0) * (1 - var(--mcp)));
+  --speak: calc(var(--voxctrl-speaking, 0) * (1 - var(--mcp)) * (1 - var(--proc)));
+  --rec: calc(
+    var(--voxctrl-recording, 0) * var(--voxctrl-audio-ready, 1) *
+    (1 - var(--mcp)) * (1 - var(--proc)) * (1 - var(--speak))
+  );
+  --init: calc(
+    var(--voxctrl-recording, 0) * (1 - var(--voxctrl-audio-ready, 1)) *
+    (1 - var(--mcp)) * (1 - var(--proc)) * (1 - var(--speak))
+  );
+  --active: max(
+    var(--voxctrl-recording, 0),
+    var(--voxctrl-processing, 0),
+    var(--voxctrl-speaking, 0),
+    var(--voxctrl-mcp-recording, 0)
+  );
+  /* One neon-yellow hue throughout, states differ by how brightly the
+     glow/accents burn rather than by hue — keeps the requested "dark
+     with neon yellow accents" palette intact across every state. */
+  --intensity: calc(
+    0.5 * var(--init) + 1 * var(--rec) + 0.72 * var(--proc) +
+    0.88 * var(--speak) + 1 * var(--mcp)
+  );
+
+  position: relative;
+  width: 560px;
+  height: 110px;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 140% at 12% 15%, rgba(234, 255, 0, 0.06), transparent 55%),
+    linear-gradient(160deg, #0b0d08 0%, #060708 55%, #08090a 100%);
+  border: 1px solid rgba(234, 255, 0, calc(0.22 + 0.18 * var(--intensity, 0)));
+  font-family: 'JetBrains Mono', 'Consolas', 'SFMono-Regular', ui-monospace, monospace;
+
+  /* Entrance/exit: a horizontal iris wipe, opening from the center out —
+     fits the wide HUD-panel shape better than a simple fade. */
+  clip-path: inset(
+    0% calc(50% * (1 - var(--active, 0))) 0% calc(50% * (1 - var(--active, 0)))
+    round 10px
+  );
+  opacity: var(--active, 0);
+  animation: vc-cyber-breathe 3.6s ease-in-out infinite;
+  box-shadow:
+    0 0 0 1px rgba(234, 255, 0, calc(0.12 + 0.10 * var(--breathe, 0)) ),
+    0 0 26px rgba(234, 255, 0, calc((0.10 + 0.10 * var(--breathe, 0)) * var(--intensity, 0.4))),
+    0 16px 32px rgba(0, 0, 0, 0.65);
+  transition:
+    clip-path 0.5s cubic-bezier(0.16, 0.84, 0.44, 1),
+    opacity 0.35s ease,
+    border-color 0.3s ease;
+}
+
+@keyframes vc-cyber-breathe {
+  0%, 100% { --breathe: 0; }
+  50% { --breathe: 1; }
+}
+
+/* ---------------------------------------------------------------------
+   Circuit-board background: etched traces (dim, always visible) plus a
+   <use> "pulse" copy of each trace whose stroke-dashoffset animates the
+   dash along the same path — a slow traveling light, i.e. the shimmer.
+   --------------------------------------------------------------------- */
+.vc-cyber-circuit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.55;
+}
+
+.vc-circuit-trace {
+  fill: none;
+  stroke: rgba(234, 255, 0, 0.10);
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+
+.vc-circuit-pulse {
+  fill: none;
+  stroke: rgba(234, 255, 0, 0.85);
+  stroke-width: 1.1;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 2.5px rgba(234, 255, 0, 0.9));
+  stroke-dasharray: 14 calc(var(--len, 100) * 2);
+  animation-name: vc-cyber-trace-pulse;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  opacity: calc(0.35 + 0.65 * var(--intensity, 0.4));
+}
+
+@keyframes vc-cyber-trace-pulse {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: calc(-1 * var(--len, 100) * 2); }
+}
+
+.vc-circuit-pulse:nth-of-type(1) { animation-duration: 4.5s; animation-delay: -0.0s; }
+.vc-circuit-pulse:nth-of-type(2) { animation-duration: 5.1s; animation-delay: -0.61s; }
+.vc-circuit-pulse:nth-of-type(3) { animation-duration: 5.7s; animation-delay: -1.22s; }
+.vc-circuit-pulse:nth-of-type(4) { animation-duration: 6.3s; animation-delay: -1.83s; }
+.vc-circuit-pulse:nth-of-type(5) { animation-duration: 6.9s; animation-delay: -2.44s; }
+.vc-circuit-pulse:nth-of-type(6) { animation-duration: 4.5s; animation-delay: -3.05s; }
+.vc-circuit-pulse:nth-of-type(7) { animation-duration: 5.1s; animation-delay: -3.66s; }
+.vc-circuit-pulse:nth-of-type(8) { animation-duration: 5.7s; animation-delay: -4.27s; }
+.vc-circuit-pulse:nth-of-type(9) { animation-duration: 6.3s; animation-delay: -4.88s; }
+.vc-circuit-pulse:nth-of-type(10) { animation-duration: 6.9s; animation-delay: -0.49s; }
+.vc-circuit-pulse:nth-of-type(11) { animation-duration: 4.5s; animation-delay: -1.1s; }
+.vc-circuit-pulse:nth-of-type(12) { animation-duration: 5.1s; animation-delay: -1.71s; }
+.vc-circuit-pulse:nth-of-type(13) { animation-duration: 5.7s; animation-delay: -2.32s; }
+.vc-circuit-pulse:nth-of-type(14) { animation-duration: 6.3s; animation-delay: -2.93s; }
+.vc-circuit-pulse:nth-of-type(15) { animation-duration: 6.9s; animation-delay: -3.54s; }
+.vc-circuit-pulse:nth-of-type(16) { animation-duration: 4.5s; animation-delay: -4.15s; }
+.vc-circuit-pulse:nth-of-type(17) { animation-duration: 5.1s; animation-delay: -4.76s; }
+.vc-circuit-pulse:nth-of-type(18) { animation-duration: 5.7s; animation-delay: -0.37s; }
+.vc-circuit-pulse:nth-of-type(19) { animation-duration: 6.3s; animation-delay: -0.98s; }
+.vc-circuit-pulse:nth-of-type(20) { animation-duration: 6.9s; animation-delay: -1.59s; }
+.vc-circuit-pulse:nth-of-type(21) { animation-duration: 4.5s; animation-delay: -2.2s; }
+.vc-circuit-pulse:nth-of-type(22) { animation-duration: 5.1s; animation-delay: -2.81s; }
+
+.vc-circuit-pad {
+  fill: rgba(234, 255, 0, 0.16);
+}
+
+/* ---------------------------------------------------------------------
+   Ambient texture: rare glitch flicker + slow scanline drift.
+   --------------------------------------------------------------------- */
+.vc-cyber-glitch {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(234, 255, 0, 0.14) 50%, transparent 100%);
+  mix-blend-mode: screen;
+  opacity: 0;
+  animation: vc-cyber-glitch 6.4s steps(1, jump-none) infinite;
+}
+
+@keyframes vc-cyber-glitch {
+  0%, 91%, 93%, 95%, 97%, 100% { opacity: 0; transform: translateX(0); }
+  91.5% { opacity: 0.55; transform: translateX(-4px); }
+  93.5% { opacity: 0.35; transform: translateX(3px); }
+  95.5% { opacity: 0.45; transform: translateX(-1.5px); }
+}
+
+.vc-cyber-scanline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 20px;
+  top: -20px;
+  background: linear-gradient(to bottom, transparent, rgba(234, 255, 0, 0.09), transparent);
+  mix-blend-mode: screen;
+  animation: vc-cyber-scan 5.5s linear infinite;
+}
+
+@keyframes vc-cyber-scan {
+  from { top: -20px; }
+  to { top: 110px; }
+}
+
+/* ---------------------------------------------------------------------
+   HUD corner brackets.
+   --------------------------------------------------------------------- */
+.vc-cyber-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  opacity: calc(0.5 + 0.5 * var(--intensity, 0.4));
+  border-color: rgba(234, 255, 0, 0.55);
+}
+.vc-cyber-corner.tl { top: 6px; left: 6px; border-top: 1.5px solid; border-left: 1.5px solid; }
+.vc-cyber-corner.tr { top: 6px; right: 6px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.vc-cyber-corner.bl { bottom: 6px; left: 6px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.vc-cyber-corner.br { bottom: 6px; right: 6px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
+/* ---------------------------------------------------------------------
+   Header: brand + status stamp.
+   --------------------------------------------------------------------- */
+.vc-cyber-header {
+  position: absolute;
+  top: 10px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vc-cyber-brand {
+  color: rgba(234, 255, 0, 0.75);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  text-shadow: 0 0 6px rgba(234, 255, 0, 0.35);
+}
+
+.vc-cyber-stamp {
+  position: relative;
+  width: 62px;
+  height: 16px;
+}
+
+.vc-cyber-stamp-dot {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: rgb(234 255 0 / calc(0.4 + 0.6 * var(--intensity, 0.4)));
+  box-shadow: 0 0 5px rgba(234, 255, 0, calc(0.6 * var(--intensity, 0.4)));
+  animation: vc-cyber-blink 1.1s ease-in-out infinite;
+}
+
+@keyframes vc-cyber-blink {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.vc-cyber-stamp-text {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: rgba(234, 255, 0, 0.9);
+  text-shadow: 0 0 6px rgba(234, 255, 0, 0.5);
+  transition: opacity 0.15s ease;
+}
+.vc-cyber-stamp-text.s-init { opacity: var(--init, 0); }
+.vc-cyber-stamp-text.s-rec { opacity: var(--rec, 0); }
+.vc-cyber-stamp-text.s-proc { opacity: var(--proc, 0); }
+.vc-cyber-stamp-text.s-speak { opacity: var(--speak, 0); }
+.vc-cyber-stamp-text.s-mcp { opacity: var(--mcp, 0); }
+
+/* ---------------------------------------------------------------------
+   Waveform: 64 thin bars, mirrored top/bottom via scaleY from center.
+   Each bar's peak height = a fixed --e envelope weight (giving the
+   silhouette an organic, speech-like shape rather than a flat meter),
+   plus a slow per-bar idle wobble, scaled live by --voxctrl-audio-level.
+   --------------------------------------------------------------------- */
+.vc-cyber-wave {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 32px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  /* Living color: white at silence, blending to neon yellow as the mic
+     level rises. Yellow is (234,255,0), white is (255,255,255) — only
+     the red and blue channels need to move. */
+  --wr: calc(255 - 21 * var(--voxctrl-audio-level, 0));
+  --wg: 255;
+  --wb: calc(255 - 255 * var(--voxctrl-audio-level, 0));
+}
+
+.vc-cyber-wave > span {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  border-radius: 2px;
+  background: rgb(var(--wr) var(--wg) var(--wb) / calc(0.4 + 0.6 * var(--intensity, 0.4)));
+  filter: drop-shadow(0 0 3px rgb(var(--wr) var(--wg) var(--wb) / calc(0.55 * var(--intensity, 0.4))));
+  transform-origin: center;
+  animation-name: vc-cyber-wave-idle;
+  animation-timing-function: ease-in-out;
+  animation-duration: 2.6s;
+  animation-iteration-count: infinite;
+  transform: scaleY(
+    clamp(
+      0.05,
+      calc(
+        0.04 + var(--idle-wobble, 0.4) * 0.14 * var(--active, 0) +
+        var(--voxctrl-audio-level, 0) * var(--e, 0.5) * 0.92 * var(--voxctrl-audio-ready, 1)
+      ),
+      1
+    )
+  );
+  transition: transform 0.08s linear, background-color 0.15s linear, filter 0.15s linear;
+}
+
+@keyframes vc-cyber-wave-idle {
+  0%, 100% { --idle-wobble: 0.15; }
+  50% { --idle-wobble: 1; }
+}
+
+.vc-cyber-wave > span:nth-child(1) { --e: 0.688; animation-delay: -2.563s; }
+.vc-cyber-wave > span:nth-child(2) { --e: 0.652; animation-delay: -2.526s; }
+.vc-cyber-wave > span:nth-child(3) { --e: 0.587; animation-delay: -2.489s; }
+.vc-cyber-wave > span:nth-child(4) { --e: 0.455; animation-delay: -2.452s; }
+.vc-cyber-wave > span:nth-child(5) { --e: 0.453; animation-delay: -2.415s; }
+.vc-cyber-wave > span:nth-child(6) { --e: 0.5; animation-delay: -2.378s; }
+.vc-cyber-wave > span:nth-child(7) { --e: 0.628; animation-delay: -2.341s; }
+.vc-cyber-wave > span:nth-child(8) { --e: 0.603; animation-delay: -2.304s; }
+.vc-cyber-wave > span:nth-child(9) { --e: 0.617; animation-delay: -2.267s; }
+.vc-cyber-wave > span:nth-child(10) { --e: 0.511; animation-delay: -2.23s; }
+.vc-cyber-wave > span:nth-child(11) { --e: 0.498; animation-delay: -2.193s; }
+.vc-cyber-wave > span:nth-child(12) { --e: 0.536; animation-delay: -2.156s; }
+.vc-cyber-wave > span:nth-child(13) { --e: 0.468; animation-delay: -2.119s; }
+.vc-cyber-wave > span:nth-child(14) { --e: 0.383; animation-delay: -2.082s; }
+.vc-cyber-wave > span:nth-child(15) { --e: 0.251; animation-delay: -2.045s; }
+.vc-cyber-wave > span:nth-child(16) { --e: 0.18; animation-delay: -2.008s; }
+.vc-cyber-wave > span:nth-child(17) { --e: 0.18; animation-delay: -1.971s; }
+.vc-cyber-wave > span:nth-child(18) { --e: 0.18; animation-delay: -1.934s; }
+.vc-cyber-wave > span:nth-child(19) { --e: 0.378; animation-delay: -1.897s; }
+.vc-cyber-wave > span:nth-child(20) { --e: 0.415; animation-delay: -1.86s; }
+.vc-cyber-wave > span:nth-child(21) { --e: 0.54; animation-delay: -1.823s; }
+.vc-cyber-wave > span:nth-child(22) { --e: 0.512; animation-delay: -1.786s; }
+.vc-cyber-wave > span:nth-child(23) { --e: 0.488; animation-delay: -1.749s; }
+.vc-cyber-wave > span:nth-child(24) { --e: 0.537; animation-delay: -1.712s; }
+.vc-cyber-wave > span:nth-child(25) { --e: 0.695; animation-delay: -1.675s; }
+.vc-cyber-wave > span:nth-child(26) { --e: 0.608; animation-delay: -1.638s; }
+.vc-cyber-wave > span:nth-child(27) { --e: 0.497; animation-delay: -1.601s; }
+.vc-cyber-wave > span:nth-child(28) { --e: 0.439; animation-delay: -1.564s; }
+.vc-cyber-wave > span:nth-child(29) { --e: 0.582; animation-delay: -1.527s; }
+.vc-cyber-wave > span:nth-child(30) { --e: 0.712; animation-delay: -1.49s; }
+.vc-cyber-wave > span:nth-child(31) { --e: 0.892; animation-delay: -1.453s; }
+.vc-cyber-wave > span:nth-child(32) { --e: 0.917; animation-delay: -1.416s; }
+.vc-cyber-wave > span:nth-child(33) { --e: 0.78; animation-delay: -1.379s; }
+.vc-cyber-wave > span:nth-child(34) { --e: 0.651; animation-delay: -1.342s; }
+.vc-cyber-wave > span:nth-child(35) { --e: 0.441; animation-delay: -1.305s; }
+.vc-cyber-wave > span:nth-child(36) { --e: 0.4; animation-delay: -1.268s; }
+.vc-cyber-wave > span:nth-child(37) { --e: 0.399; animation-delay: -1.231s; }
+.vc-cyber-wave > span:nth-child(38) { --e: 0.302; animation-delay: -1.194s; }
+.vc-cyber-wave > span:nth-child(39) { --e: 0.229; animation-delay: -1.157s; }
+.vc-cyber-wave > span:nth-child(40) { --e: 0.18; animation-delay: -1.12s; }
+.vc-cyber-wave > span:nth-child(41) { --e: 0.228; animation-delay: -1.083s; }
+.vc-cyber-wave > span:nth-child(42) { --e: 0.317; animation-delay: -1.046s; }
+.vc-cyber-wave > span:nth-child(43) { --e: 0.492; animation-delay: -1.009s; }
+.vc-cyber-wave > span:nth-child(44) { --e: 0.535; animation-delay: -0.972s; }
+.vc-cyber-wave > span:nth-child(45) { --e: 0.424; animation-delay: -0.935s; }
+.vc-cyber-wave > span:nth-child(46) { --e: 0.329; animation-delay: -0.898s; }
+.vc-cyber-wave > span:nth-child(47) { --e: 0.284; animation-delay: -0.861s; }
+.vc-cyber-wave > span:nth-child(48) { --e: 0.38; animation-delay: -0.824s; }
+.vc-cyber-wave > span:nth-child(49) { --e: 0.534; animation-delay: -0.787s; }
+.vc-cyber-wave > span:nth-child(50) { --e: 0.572; animation-delay: -0.75s; }
+.vc-cyber-wave > span:nth-child(51) { --e: 0.585; animation-delay: -0.713s; }
+.vc-cyber-wave > span:nth-child(52) { --e: 0.583; animation-delay: -0.676s; }
+.vc-cyber-wave > span:nth-child(53) { --e: 0.662; animation-delay: -0.639s; }
+.vc-cyber-wave > span:nth-child(54) { --e: 0.839; animation-delay: -0.602s; }
+.vc-cyber-wave > span:nth-child(55) { --e: 0.849; animation-delay: -0.565s; }
+.vc-cyber-wave > span:nth-child(56) { --e: 0.752; animation-delay: -0.528s; }
+.vc-cyber-wave > span:nth-child(57) { --e: 0.504; animation-delay: -0.491s; }
+.vc-cyber-wave > span:nth-child(58) { --e: 0.362; animation-delay: -0.454s; }
+.vc-cyber-wave > span:nth-child(59) { --e: 0.204; animation-delay: -0.417s; }
+.vc-cyber-wave > span:nth-child(60) { --e: 0.246; animation-delay: -0.38s; }
+.vc-cyber-wave > span:nth-child(61) { --e: 0.369; animation-delay: -0.343s; }
+.vc-cyber-wave > span:nth-child(62) { --e: 0.351; animation-delay: -0.306s; }
+.vc-cyber-wave > span:nth-child(63) { --e: 0.307; animation-delay: -0.269s; }
+.vc-cyber-wave > span:nth-child(64) { --e: 0.287; animation-delay: -0.232s; }
+
+/* ---------------------------------------------------------------------
+   Command line: "TARGET  {{target}}  >>  ACTION" — target comes from
+   VoxCtrl's template placeholder; the action word swaps with live state
+   using the stacked-opacity trick again.
+   --------------------------------------------------------------------- */
+.vc-cyber-command {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 10px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  font-size: 11px;
+  line-height: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.vc-cyber-cmd-label {
+  color: rgba(234, 255, 0, 0.35);
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  flex: none;
+}
+
+.vc-cyber-cmd-target {
+  color: rgba(234, 255, 0, 0.92);
+  text-shadow: 0 0 6px rgba(234, 255, 0, 0.4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.vc-cyber-cmd-arrow {
+  color: rgba(234, 255, 0, 0.55);
+  flex: none;
+}
+
+.vc-cyber-cmd-action {
+  position: relative;
+  display: inline-block;
+  width: 150px;
+  height: 13px;
+  flex: none;
+}
+
+.vc-cyber-cmd-action > span {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  line-height: 13px;
+  color: #fffbe0;
+  text-shadow: 0 0 8px rgba(234, 255, 0, 0.75);
+  transition: opacity 0.15s ease;
+}
+.vc-cyber-cmd-action > .a-init { opacity: var(--init, 0); }
+.vc-cyber-cmd-action > .a-rec { opacity: var(--rec, 0); }
+.vc-cyber-cmd-action > .a-proc { opacity: var(--proc, 0); }
+.vc-cyber-cmd-action > .a-speak { opacity: var(--speak, 0); }
+.vc-cyber-cmd-action > .a-mcp { opacity: var(--mcp, 0); }
