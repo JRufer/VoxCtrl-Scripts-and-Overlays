@@ -1,0 +1,200 @@
+/*
+ * Styling for the "Dark Minimal" custom overlay (see index.html for the
+ * markup and the full explanation of why this is CSS-only).
+ *
+ * Layout: a small translucent black pill, red audio dot on the left, a
+ * 9-bar waveform matrix in the middle, target name on the right, with a
+ * soft blue glow breathing behind the whole bar. Everything reactive is
+ * driven by the six --voxctrl-* custom properties VoxCtrl writes onto
+ * the page root; no script is used or needed.
+ */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.dm-scene {
+  position: relative;
+  display: inline-block;
+  width: 300px;
+  height: 56px;
+  pointer-events: none;
+  user-select: none;
+}
+
+.dm-scene,
+.dm-glow,
+.dm-pill {
+  /* ---- Mutually-exclusive state flags (priority chain) ----
+   *    Multiple --voxctrl-* booleans can technically be 1 at once, but we
+   *    want exactly one "current" state driving color/text/animation.
+   *    Each tier is multiplied by (1 - every higher-priority tier). */
+  --mcp: var(--voxctrl-mcp-recording, 0);
+  --proc: calc(var(--voxctrl-processing, 0) * (1 - var(--mcp)));
+  --speak: calc(var(--voxctrl-speaking, 0) * (1 - var(--mcp)) * (1 - var(--proc)));
+  --rec: calc(
+    var(--voxctrl-recording, 0) * var(--voxctrl-audio-ready, 1) *
+    (1 - var(--mcp)) * (1 - var(--proc)) * (1 - var(--speak))
+  );
+  --init: calc(
+    var(--voxctrl-recording, 0) * (1 - var(--voxctrl-audio-ready, 1)) *
+    (1 - var(--mcp)) * (1 - var(--proc)) * (1 - var(--speak))
+  );
+  --active: max(
+    var(--voxctrl-recording, 0),
+    var(--voxctrl-processing, 0),
+    var(--voxctrl-speaking, 0),
+    var(--voxctrl-mcp-recording, 0)
+  );
+
+  /* ---- Living color: one blended state color, channel by channel ----
+   *    init = slate (connecting), rec = red (listening, matches the
+   *    reference mockup's bubble), proc = amber (transcribing),
+   *    speak = teal (TTS talking back), mcp = violet (MCP-triggered). */
+  --wr: calc(150 * var(--init) + 255 * var(--rec) + 245 * var(--proc) + 20 * var(--speak) + 139 * var(--mcp));
+  --wg: calc(155 * var(--init) + 70  * var(--rec) + 158 * var(--proc) + 184 * var(--speak) + 92  * var(--mcp));
+  --wb: calc(165 * var(--init) + 70  * var(--rec) + 11  * var(--proc) + 166 * var(--speak) + 246 * var(--mcp));
+}
+
+/* ============================= Blue ambient glow ============================= */
+
+/* Sits behind the pill, blurred and larger than it. Fades in/out with
+ *  --active, and breathes on its own slow independent loop the whole
+ *  time it's visible — ambient texture that has nothing to do with
+ *  mic volume. */
+.dm-glow {
+  position: absolute;
+  inset: -18px;
+  border-radius: 44px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(64, 140, 255, 0.55) 0%,
+    rgba(64, 140, 255, 0.22) 45%,
+    rgba(64, 140, 255, 0) 75%
+  );
+  opacity: var(--active, 0);
+  filter: blur(2px);
+  transition: opacity 0.5s ease;
+  animation: dm-glow-breathe 4.2s ease-in-out infinite;
+}
+
+@keyframes dm-glow-breathe {
+  0%, 100% { transform: scale(0.94); filter: blur(2px) brightness(0.9); }
+  50%      { transform: scale(1.05); filter: blur(3px) brightness(1.25); }
+}
+
+/* ============================= The pill itself ============================= */
+
+.dm-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  padding: 0 18px;
+  box-sizing: border-box;
+  border-radius: 28px;
+  background: rgba(12, 12, 16, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+
+  /* Entrance/exit: a center-out "iris" width wipe. clip-path crops the
+   *  already-fully-laid-out content symmetrically from both sides
+   *  rather than scaling it, so nothing inside gets squished as it
+   *  reveals/hides. */
+  clip-path: inset(
+    0 calc(50% * (1 - var(--active, 0))) 0 calc(50% * (1 - var(--active, 0)))
+    round 28px
+  );
+  transition: clip-path 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================= Red audio bubble ============================= */
+
+/* Swells and brightens directly with --voxctrl-audio-level — no ambient
+ *  animation of its own, so it stays calm and small at silence and only
+ *  comes alive when the user actually speaks. */
+.dm-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgb(var(--wr), var(--wg), var(--wb));
+  transform: scale(calc(1 + var(--voxctrl-audio-level, 0) * 0.55));
+  box-shadow: 0 0 calc(4px + var(--voxctrl-audio-level, 0) * 10px)
+    calc(1px + var(--voxctrl-audio-level, 0) * 3px)
+    rgba(var(--wr), var(--wg), var(--wb), calc(0.55 + var(--voxctrl-audio-level, 0) * 0.45));
+  transition: transform 0.1s linear, box-shadow 0.1s linear;
+}
+
+/* ============================= Waveform bar matrix ============================= */
+
+.dm-wave {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 100%;
+}
+
+/* Each bar has a fixed positional weight (--w) so the resting shape
+ *  already reads as a waveform silhouette (short at the edges, tall in
+ *  the middle) rather than flat equalizer blocks. --voxctrl-audio-level
+ *  scales the extra height on top of that per-bar weight, and a
+ *  slightly different transition speed per bar keeps the bounce from
+ *  looking perfectly synchronized/mechanical. */
+.dm-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: rgba(230, 233, 240, 0.9);
+  height: calc(4px + var(--w, 0.5) * var(--voxctrl-audio-level, 0) * 22px);
+  transition: height 0.12s ease-out;
+}
+
+.dm-bar:nth-child(1) { --w: 0.28; transition-duration: 0.16s; }
+.dm-bar:nth-child(2) { --w: 0.5;  transition-duration: 0.1s; }
+.dm-bar:nth-child(3) { --w: 0.72; transition-duration: 0.14s; }
+.dm-bar:nth-child(4) { --w: 0.92; transition-duration: 0.09s; }
+.dm-bar:nth-child(5) { --w: 1;    transition-duration: 0.13s; }
+.dm-bar:nth-child(6) { --w: 0.85; transition-duration: 0.1s; }
+.dm-bar:nth-child(7) { --w: 0.62; transition-duration: 0.15s; }
+.dm-bar:nth-child(8) { --w: 0.4;  transition-duration: 0.11s; }
+.dm-bar:nth-child(9) { --w: 0.25; transition-duration: 0.17s; }
+
+/* ============================= Target readout ============================= */
+
+.dm-target {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.dm-target-label {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(220, 222, 230, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dm-target-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f2f3f7;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

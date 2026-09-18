@@ -31,3 +31,10 @@ A collection of custom animated overlay designs for users to use and edit
 ![GlassPill UI](assets/GlassPill.png)
 
  ---
+ 
+ * DarkMinimal
+**A small translucent dark pill with a volume-reactive red bubble and waveform**
+
+![DarkMinimal UI](assets/DarkMinimal.png)
+
+ ---

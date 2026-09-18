@@ -1,0 +1,75 @@
+<!--
+  VoxCtrl custom overlay — "Dark Minimal"
+
+  A tiny translucent black pill: a red audio bubble on the left, a
+  9-bar waveform matrix in the middle, and the routing target's name on
+  the right — recreating the reference mockup (dark rounded bar, red
+  dot, vertical bar waveform, "Target: <name>").
+
+  TEMPLATE PLACEHOLDER
+  ─────────────────────
+  {{target}} — the active routing target's label (e.g. "Clipboard"),
+  substituted once when this HTML renders. ({{trigger}} carries the same
+  value if ever needed instead.)
+
+  NO <script> — BY DESIGN
+  ─────────────────────────
+  VoxCtrl's overlay window CSP is `script-src 'self'` with no
+  `unsafe-inline`, so any <script> here (in the file or injected at
+  runtime) is silently blocked — the overlay would just fail to animate,
+  with no visible error. Every behavior below comes from plain CSS
+  reading the six live custom properties VoxCtrl continuously writes onto
+  the page root:
+
+    --voxctrl-recording       0 or 1
+    --voxctrl-processing      0 or 1 — Whisper is transcribing
+    --voxctrl-speaking        0 or 1 — TTS is talking back
+    --voxctrl-mcp-recording   0 or 1 — an MCP client triggered recording
+    --voxctrl-audio-ready     0 or 1 — 0 while the mic is still connecting
+    --voxctrl-audio-level     0..1, the smoothed microphone level
+
+  See style.css for how these drive: a center-out "iris" width wipe on
+  entrance/exit, a slow independent breathing loop on the blue glow
+  behind the bar, the living-color tint on the dot/bars/text, and the
+  red bubble + bar-matrix waveform reacting directly to
+  --voxctrl-audio-level.
+-->
+<link rel="stylesheet" href="style.css">
+<div class="dm-scene">
+  <!-- Soft blue glow behind the bar. Breathes on its own slow loop
+       (ambient motion, independent of mic volume) but is only ever
+       visible while the overlay itself is active. -->
+  <div class="dm-glow"></div>
+
+  <div class="dm-pill">
+    <!-- Red audio bubble (left). Swells and brightens directly with
+         --voxctrl-audio-level — no idle animation of its own, so it
+         sits calm until the user actually speaks. -->
+    <span class="dm-dot"></span>
+
+    <!-- Center-weighted bar matrix (the waveform). Each bar has its own
+         positional weight so the rest state already reads as a
+         waveform silhouette, and every bar's height rides
+         --voxctrl-audio-level on top of that, each at a slightly
+         different speed so the bounce feels organic rather than
+         mechanical. -->
+    <div class="dm-wave">
+      <span class="dm-bar"></span>
+      <span class="dm-bar"></span>
+      <span class="dm-bar"></span>
+      <span class="dm-bar"></span>
+      <span class="dm-bar"></span>
+      <span class="dm-bar"></span>
+      <span class="dm-bar"></span>
+      <span class="dm-bar"></span>
+      <span class="dm-bar"></span>
+    </div>
+
+    <!-- Target readout (right), constrained to the pill's own padding
+         so long target names ellipsize instead of spilling out. -->
+    <div class="dm-target">
+      <span class="dm-target-label">Target:</span>
+      <span class="dm-target-name">{{target}}</span>
+    </div>
+  </div>
+</div>
