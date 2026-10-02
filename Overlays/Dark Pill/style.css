@@ -6,7 +6,7 @@
  * corner radius (14px instead of 28px — at this height it reads as a
  * card rather than a capsule). A translucent black body with a top row
  * (red audio dot, 9-bar waveform matrix, target name) and, below it, a
- * two-line area that shows the live transcript, or a status line until
+ * small-text area (about three lines) that shows the live transcript, or a status line until
  * words arrive, with a soft blue glow breathing behind the whole thing.
  * Everything reactive is driven by the --voxctrl-* custom properties
  * VoxCtrl writes onto the page root; no script is used or needed.
@@ -212,7 +212,9 @@ html, body {
 
 /* ============================= Live text area ============================= */
 
-/* Two lines of 20px text. A thin rule separates it from the top row. */
+/* The text area under the top row, separated by a thin rule. The live text
+ *  is set at 9px — the same size as the smallest text in this overlay (the
+ *  "Target:" label) — so about three lines of it fit in the space. */
 .dp-text {
   position: relative;
   flex: 1 1 auto;
@@ -232,9 +234,10 @@ html, body {
  *  is clipped there, so the newest words stay in view. */
 .dp-live {
   width: 100%;
-  font-size: 14px;
-  line-height: 20px;
+  font-size: 9px;
+  line-height: 12px;
   font-weight: 500;
+  letter-spacing: 0.02em;
   color: #f2f3f7;
   overflow-wrap: anywhere;
   opacity: var(--voxctrl-has-live-text, 0);
@@ -247,7 +250,7 @@ html, body {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 20px;
+  height: 14px;
   opacity: calc(1 - var(--voxctrl-has-live-text, 0));
   transition: opacity 0.2s ease;
 }
@@ -256,8 +259,8 @@ html, body {
   position: absolute;
   left: 0;
   bottom: 0;
-  font-size: 13px;
-  line-height: 20px;
+  font-size: 10px;
+  line-height: 14px;
   font-style: italic;
   color: rgba(220, 222, 230, 0.55);
   white-space: nowrap;
