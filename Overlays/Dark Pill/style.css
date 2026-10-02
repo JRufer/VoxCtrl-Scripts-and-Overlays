@@ -2,13 +2,14 @@
  * Styling for the "Dark Pill" custom overlay (see index.html for the
  * markup and the full explanation of why this is CSS-only).
  *
- * Layout: Dark Minimal at twice the height (300x112). A translucent black
- * pill: a top row with the red audio dot, a 9-bar waveform matrix and the
- * target name, and below it a two-line area that shows the live transcript
- * (or a status line until words arrive), with a soft blue glow breathing
- * behind the whole thing. Everything reactive is
- * driven by the six --voxctrl-* custom properties VoxCtrl writes onto
- * the page root; no script is used or needed.
+ * Layout: Dark Minimal at twice the height (300x112), with half its
+ * corner radius (14px instead of 28px — at this height it reads as a
+ * card rather than a capsule). A translucent black body with a top row
+ * (red audio dot, 9-bar waveform matrix, target name) and, below it, a
+ * two-line area that shows the live transcript, or a status line until
+ * words arrive, with a soft blue glow breathing behind the whole thing.
+ * Everything reactive is driven by the --voxctrl-* custom properties
+ * VoxCtrl writes onto the page root; no script is used or needed.
  */
 
 html, body {
@@ -70,7 +71,7 @@ html, body {
 .dp-glow {
   position: absolute;
   inset: -18px;
-  border-radius: 56px;
+  border-radius: 24px;
   background: radial-gradient(
     ellipse at center,
     rgba(64, 140, 255, 0.55) 0%,
@@ -98,7 +99,7 @@ html, body {
   height: 100%;
   padding: 0 18px 12px;
   box-sizing: border-box;
-  border-radius: 32px;
+  border-radius: 14px;
   background: rgba(12, 12, 16, 0.72);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(14px);
@@ -112,7 +113,7 @@ html, body {
    *  reveals/hides. */
   clip-path: inset(
     0 calc(50% * (1 - var(--active, 0))) 0 calc(50% * (1 - var(--active, 0)))
-    round 32px
+    round 14px
   );
   transition: clip-path 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }

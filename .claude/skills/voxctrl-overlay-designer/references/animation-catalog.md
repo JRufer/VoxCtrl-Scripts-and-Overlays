@@ -173,3 +173,58 @@ When proposing options to the user, name 3-4 that plausibly fit the
 *specific* image they gave you (not the full list) and say in one
 clause why each fits — e.g. "a radial pulse ring, since your mockup's
 audio element is a circular badge rather than a bar strip."
+
+## 4. Live transcript text (optional, opt-in)
+
+Some designs want a caption area that shows the words being transcribed
+while the user is still speaking. It is the one piece of *content* (as
+opposed to state) VoxCtrl streams into an overlay, and because overlays
+cannot run script, VoxCtrl writes it for you:
+
+- Put `data-voxctrl-live-text` on an empty element. VoxCtrl sets its
+  `textContent` to the transcript so far, a few times a second.
+- While there is no text the element has a `data-empty` attribute, and
+  the page root carries `--voxctrl-has-live-text: 0` (it becomes `1` once
+  words arrive). Both are free for CSS to use.
+- The attribute is also the opt-in. VoxCtrl runs the extra
+  mid-recording transcription only when the active overlay's HTML has the
+  attribute on a real element (a mention in a comment doesn't count). So
+  it costs nothing for overlays that don't use it, and it should only be
+  added deliberately.
+
+**Layout recipe — two lines, newest words always visible.** Give the text
+area a fixed two-line height, clip it, and bottom-align the content so
+that longer text overflows *upward* and is cut off at the top:
+
+```css
+.text {                         /* the fixed-height window */
+  position: relative;
+  height: 40px;                 /* 2 lines x 20px line-height */
+  display: flex;
+  align-items: flex-end;        /* grow upward */
+  overflow: hidden;
+  /* old lines fade out instead of being cut mid-glyph */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 10px);
+}
+.live {                         /* the element VoxCtrl fills */
+  width: 100%;
+  font-size: 14px;
+  line-height: 20px;
+  overflow-wrap: anywhere;
+  opacity: var(--voxctrl-has-live-text, 0);   /* hidden until words arrive */
+}
+.status {                       /* shown until the first words */
+  position: absolute; left: 0; right: 0; bottom: 0; height: 20px;
+  opacity: calc(1 - var(--voxctrl-has-live-text, 0));
+}
+```
+
+Pair it with the opacity-stack technique (§ "Three core techniques") for
+the status line, so it can say "Listening…", "Transcribing…" and so on
+per state until text arrives. The text may never arrive at all (a remote
+speech engine, or a heavy local model, doesn't produce it), so the status
+line must look intentional as the resting state, not like a bug.
+
+`Overlays/Dark Pill` in the overlays repo is a complete worked example:
+the Dark Minimal pill at twice the height with this text area underneath.
