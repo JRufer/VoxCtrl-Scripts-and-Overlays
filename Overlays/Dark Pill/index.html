@@ -1,0 +1,79 @@
+<!--
+  VoxCtrl custom overlay — "Dark Pill"
+
+  "Dark Minimal" at twice the height: the same translucent black pill with
+  a red audio bubble, a 9-bar waveform and the routing target's name along
+  the top, plus a text area underneath that shows the words being
+  transcribed, live, while you speak (the last three lines, newest at the
+  bottom).
+
+  TEMPLATE PLACEHOLDER
+  ─────────────────────
+  {{target}} — the active routing target's label (e.g. "Focused Window", the default when dictating to the cursor),
+  substituted once when this HTML renders.
+
+  LIVE TEXT
+  ─────────
+  The element carrying the live-text attribute (see the text area below) is
+  filled by VoxCtrl with the in-progress transcript — an overlay can't run
+  script, so VoxCtrl writes it for us. Having that attribute is also what
+  tells VoxCtrl to run the extra mid-recording transcription that produces
+  it, so the cost is only paid by overlays that ask for it. Until words
+  arrive (or when the speech engine can't produce them, e.g. a remote
+  engine), a status line — "Listening…", "Transcribing…" — shows in its
+  place; it is driven by --voxctrl-has-live-text, which VoxCtrl writes
+  alongside the usual --voxctrl-* properties.
+
+  NO <script> — BY DESIGN
+  ─────────────────────────
+  VoxCtrl's overlay window CSP is `script-src 'self'`, so every behavior
+  here is plain CSS reading the live custom properties on the page root:
+  --voxctrl-recording, --voxctrl-processing, --voxctrl-speaking,
+  --voxctrl-mcp-recording, --voxctrl-audio-ready (each 0 or 1),
+  --voxctrl-audio-level (0..1) and --voxctrl-has-live-text (0 or 1).
+-->
+<link rel="stylesheet" href="style.css">
+<div class="dp-scene">
+  <!-- Soft blue glow behind the pill; breathes on its own slow loop. -->
+  <div class="dp-glow"></div>
+
+  <div class="dp-pill">
+    <!-- Top row: audio bubble, waveform, target readout. -->
+    <div class="dp-top">
+      <span class="dp-dot"></span>
+
+      <div class="dp-wave">
+        <span class="dp-bar"></span>
+        <span class="dp-bar"></span>
+        <span class="dp-bar"></span>
+        <span class="dp-bar"></span>
+        <span class="dp-bar"></span>
+        <span class="dp-bar"></span>
+        <span class="dp-bar"></span>
+        <span class="dp-bar"></span>
+        <span class="dp-bar"></span>
+      </div>
+
+      <div class="dp-target">
+        <span class="dp-target-label">Target:</span>
+        <span class="dp-target-name">{{target}}</span>
+      </div>
+    </div>
+
+    <!-- Text area: about three lines of 9px text. The live transcript sits at the bottom
+         and grows upward, so the newest words are always visible. -->
+    <div class="dp-text">
+      <!-- Status line shown until the first words arrive. All the labels
+           are pre-rendered and faded with the state formulas, since CSS
+           can't swap text. -->
+      <div class="dp-status">
+        <span class="dp-status-label dp-s-init">Connecting…</span>
+        <span class="dp-status-label dp-s-rec">Listening…</span>
+        <span class="dp-status-label dp-s-proc">Transcribing…</span>
+        <span class="dp-status-label dp-s-speak">Speaking…</span>
+        <span class="dp-status-label dp-s-mcp">Listening for MCP…</span>
+      </div>
+      <div class="dp-live" data-voxctrl-live-text></div>
+    </div>
+  </div>
+</div>

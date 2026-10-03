@@ -42,6 +42,27 @@ contract changes since this was written. Otherwise, the essentials:
   `--voxctrl-audio-ready` (0 while the mic connects), and
   `--voxctrl-audio-level` (0..1, already smoothed). These are the only
   inputs the design can react to.
+- **Optional, opt-in: live transcript text.** A design may include an
+  element carrying the attribute `data-voxctrl-live-text`
+  (`<div class="live" data-voxctrl-live-text></div>`). VoxCtrl then
+  writes the words being transcribed *while the user is still speaking*
+  into it as plain text (updated a few times a second, newest words
+  last) — since overlays can't run script, the host does the writing.
+  VoxCtrl also sets `--voxctrl-has-live-text` (0/1) on the page root and
+  a `data-empty` attribute on the element while it has no text yet, so
+  CSS can show a "Listening…" line until words arrive. **It is opt-in
+  because it costs the user CPU:** VoxCtrl runs extra mid-recording
+  transcription passes only when the active overlay's HTML contains the
+  attribute (HTML comments don't count), and only for local speech
+  engines. It also puts the user's words on screen, visible in screen
+  shares. So add it only when the design calls for text or the user asks
+  for it — never to every overlay by default. Design the text area for
+  one or two lines with a fixed height, `overflow: hidden`, and
+  bottom-aligned content so the newest words stay in view (see
+  `references/animation-catalog.md` §4, and `Overlays/Dark Pill` in the
+  overlays repo as the reference implementation). The text may also never
+  arrive (remote speech engine, heavy local model), so the placeholder
+  state must look intentional on its own.
 - **Two files, one folder** — `index.html` + `style.css` in a folder
   named after the design (this becomes the style's name in VoxCtrl's
   Settings dropdown). No build step, no bundler, no external requests
@@ -104,6 +125,11 @@ this specific request**, typically covering:
   "waveform", that could still mean a continuous silhouette, mirrored
   VU bars, or a radial pulse; name the ones that fit their description
   and say why in one clause each.
+- **Live transcript text** — only if the description suggests it
+  ("show what I'm saying", "captions", "subtitles", a text area). Ask
+  whether they want it, mention that it costs some CPU and shows their
+  words on screen, and if yes, how many lines (one or two) — that sets
+  the card height. Don't add it unprompted.
 - **Any dynamic label's behavior** — if they want the current
   target/command shown, ask whether the action word should be static or
   swap per VoxCtrl state (recording/processing/speaking/mcp), since that
@@ -179,6 +205,13 @@ the CSS.
   is also the easiest way to answer "show me what it looks like".
 - Check every text region for clipping/overlap at each state, not just
   that something renders.
+- If the design uses live text, confirm `data-voxctrl-live-text` is on a
+  real element (a mention in an HTML comment does not count), then
+  screenshot it empty (the status placeholder should show), with a short
+  phrase, and with text far longer than two lines (only the newest two
+  lines may show, nothing may overflow the card). Simulate VoxCtrl by
+  setting `--voxctrl-has-live-text` on the root and the element's
+  `textContent` in the page.
 
 ### 5. Known pitfalls (bugs actually hit building these — check for them)
 

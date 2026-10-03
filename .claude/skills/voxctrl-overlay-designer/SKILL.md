@@ -43,6 +43,27 @@ you haven't internalized it this session — it's short. The essentials:
   opens with the three techniques (state-flag priority chains,
   opacity-stack text swaps, blended "living color") that make a rich,
   reactive design possible from just these six numbers.
+- **Optional, opt-in: live transcript text.** A design may include an
+  element carrying the attribute `data-voxctrl-live-text`
+  (`<div class="live" data-voxctrl-live-text></div>`). VoxCtrl then
+  writes the words being transcribed *while the user is still speaking*
+  into it as plain text (updated a few times a second, newest words
+  last) — since overlays can't run script, the host does the writing.
+  VoxCtrl also sets `--voxctrl-has-live-text` (0/1) on the page root and
+  a `data-empty` attribute on the element while it has no text yet, so
+  CSS can show a "Listening…" line until words arrive. **It is opt-in
+  because it costs the user CPU:** VoxCtrl runs extra mid-recording
+  transcription passes only when the active overlay's HTML contains the
+  attribute (HTML comments don't count), and only for local speech
+  engines. It also puts the user's words on screen, visible in screen
+  shares. So add it only when the design calls for text or the user asks
+  for it — never to every overlay by default. Design the text area for
+  one or two lines with a fixed height, `overflow: hidden`, and
+  bottom-aligned content so the newest words stay in view (see
+  `references/animation-catalog.md` §4, and `Overlays/Dark Pill` in the
+  overlays repo as the reference implementation). The text may also never
+  arrive (remote speech engine, heavy local model), so the placeholder
+  state must look intentional on its own.
 - **Two files, one folder.** The deliverable is `index.html` +
   `style.css` in a folder named after the design (this becomes the
   style's name in VoxCtrl's Settings dropdown). Both are re-read fresh
@@ -117,7 +138,16 @@ A few things learned from building these that will save you rework:
   "PROCESSING" / etc. status readout and its color working as part of
   the base build.
 - Preserve `{{target}}` in the output exactly, and don't hallucinate
-  additional placeholders — only `{{target}}`/`{{trigger}}` exist.
+  additional placeholders — only `{{target}}`/`{{trigger}}` exist. (Live
+  transcript text is not a placeholder; it is the opt-in
+  `data-voxctrl-live-text` attribute described in the constraints.)
+- If the reference image shows a text area meant for what the user is
+  saying (a caption line, a subtitle strip, a "transcript" box), that is
+  the signal to add live text. Size the card for it (two lines of body
+  text is roughly 40-44px at 14px/20px), keep the status line
+  ("Listening…") for the empty state, and say in your delivery that the
+  overlay opts in to live transcription. If the image has no such area,
+  don't add one.
 
 At this point you should have a working, correctly-shaped overlay with
 sensible default motion (a simple fade or the flip reveal from the
@@ -169,6 +199,13 @@ visualizer reacting to audio level should feel closer to real-time
 ### 5. Verify before delivering
 
 - Grep your own output for `<script` — there should be none.
+- If the design uses live text: confirm the attribute is on a real
+  element (not only in a comment), then screenshot with the element
+  filled with a short phrase, a long one (it must show only the last two
+  lines, not overflow the card) and empty (the "Listening…" state should
+  show, the empty text area should not look broken). In a plain browser
+  you simulate VoxCtrl by setting `--voxctrl-has-live-text` on the root
+  and the element's `textContent`.
 - Confirm `{{target}}` appears and nothing else looks like an
   unsubstituted placeholder.
 - Confirm the `<link rel="stylesheet" href="style.css">` tag from the

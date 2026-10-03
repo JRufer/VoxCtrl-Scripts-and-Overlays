@@ -38,3 +38,10 @@ A collection of custom animated overlay designs for users to use and edit
 ![DarkMinimal UI](assets/DarkMinimal.png)
 
  ---
+
+ * Dark Pill
+**Dark Minimal at twice the height, with room for two lines of live transcript text as you speak**
+
+![Dark Pill UI](assets/DarkPill.png)
+
+ ---
