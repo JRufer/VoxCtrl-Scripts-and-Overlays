@@ -113,12 +113,25 @@
     <!-- Two telemetry read-outs, decorative "always doing something"
          chrome with independently staggered blink timing. -->
     <div class="tng-telemetry">
-      <div class="tng-tbox">
+      <!-- The DATA STREAM box carries the live transcript: its readout lines
+           hold the space until the first words arrive, then the words being
+           transcribed replace them (newest at the bottom). VoxCtrl writes
+           the whole transcript into [data-voxctrl-live-text] and, since
+           0.8.4, the settled and still-changing words separately into
+           [data-voxctrl-live-committed] and [data-voxctrl-live-tentative]
+           (--voxctrl-live-split is 1 there, so the CSS shows that copy and
+           tints the tentative words). With live text switched off in
+           Settings (--voxctrl-live-enabled 0) the readout lines stay. -->
+      <div class="tng-tbox tng-tbox-stream">
         <div class="tng-tbox-head">DATA STREAM: <span class="tng-tstate">ACTIVE</span></div>
-        <div class="tng-tline">DE0X14G00&nbsp; SYNCHRONIZED</div>
-        <div class="tng-tline">DATA-0100&nbsp; BUFFER A</div>
-        <div class="tng-tline">DE0X14G01&nbsp; WAVEFORM LOCK</div>
-        <div class="tng-tline">SIGNAL&nbsp;&nbsp;&nbsp;&nbsp; NOMINAL</div>
+        <div class="tng-tlines">
+          <div class="tng-tline">DE0X14G00&nbsp; SYNCHRONIZED</div>
+          <div class="tng-tline">DATA-0100&nbsp; BUFFER A</div>
+          <div class="tng-tline">DE0X14G01&nbsp; WAVEFORM LOCK</div>
+          <div class="tng-tline">SIGNAL&nbsp;&nbsp;&nbsp;&nbsp; NOMINAL</div>
+        </div>
+        <div class="tng-stream tng-stream-whole" data-voxctrl-live-text></div>
+        <div class="tng-stream tng-stream-split"><div><span data-voxctrl-live-committed></span> <span class="tng-tentative" data-voxctrl-live-tentative></span></div></div>
       </div>
       <div class="tng-tbox">
         <div class="tng-tbox-head">DESTINATION: BUFFER A</div>

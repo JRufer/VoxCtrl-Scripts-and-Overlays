@@ -34,6 +34,16 @@
   washes across the mic bead / rings / badge / dots, the two ambient
   loops (a slow breathing glow on the mic, staggered blinking dots), and
   the audio-reactive concentric pulse rings around the mic.
+  LIVE TEXT
+  ─────────
+  While you speak, the words being transcribed replace the telemetry dots
+  under the target: VoxCtrl writes the whole transcript into
+  [data-voxctrl-live-text] and, since 0.8.4, the settled and still-changing
+  words separately into [data-voxctrl-live-committed] and
+  [data-voxctrl-live-tentative] (--voxctrl-live-split is 1 there, so the CSS
+  shows that copy and tints the tentative words). With live text switched
+  off in Settings (--voxctrl-live-enabled 0) the dots stay, as before.
+
 -->
 <div class="gp-scene">
   <div class="gp-pill">
@@ -63,10 +73,17 @@
         <span class="gp-status-text s-mcp">MCP ACTIVE</span>
       </div>
       <div class="gp-target">{{target}}</div>
-      <div class="gp-dots">
-        <span class="gp-dot"></span>
-        <span class="gp-dot"></span>
-        <span class="gp-dot"></span>
+      <!-- The telemetry dots hold this slot until the first words arrive;
+           then the live transcript replaces them (two lines, newest at the
+           bottom). VoxCtrl fills the marked elements; see LIVE TEXT above. -->
+      <div class="gp-tail">
+        <div class="gp-dots">
+          <span class="gp-dot"></span>
+          <span class="gp-dot"></span>
+          <span class="gp-dot"></span>
+        </div>
+        <div class="gp-live gp-live-whole" data-voxctrl-live-text></div>
+        <div class="gp-live gp-live-split"><div><span data-voxctrl-live-committed></span> <span class="gp-tentative" data-voxctrl-live-tentative></span></div></div>
       </div>
     </div>
 

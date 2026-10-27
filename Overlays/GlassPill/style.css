@@ -177,6 +177,9 @@ html, body {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  /* The transcript hangs below the dots' slot; lift the column so the
+   *  whole block stays centered in the pill while it's on. */
+  transform: translateY(calc(-13px * var(--voxctrl-live-enabled, 1)));
 }
 
 /* Fixed-height container so the absolutely-positioned label stack below
@@ -274,4 +277,53 @@ html, body {
   letter-spacing: 0.2em;
   color: rgb(var(--wr), var(--wg), var(--wb));
   opacity: 0.85;
+}
+
+/* ============================= Live transcript ============================= */
+
+/* Occupies the dots' slot: the dots fade out as the first words fade in. */
+.gp-tail {
+  position: relative;
+}
+
+.gp-dots {
+  opacity: calc(1 - var(--voxctrl-has-live-text, 0) * var(--voxctrl-live-enabled, 1));
+  transition: opacity 0.2s ease;
+}
+
+/* Two lines, bottom-aligned so the newest words stay in view; older lines
+ *  leave through a soft fade at the top. */
+.gp-live {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 2px;
+  height: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  color: #333b63;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 7px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 7px);
+  transition: opacity 0.2s ease;
+}
+
+/* Exactly one copy shows: split where VoxCtrl fills it, whole on older versions. */
+.gp-live-whole {
+  opacity: calc(var(--voxctrl-live-enabled, 1) * var(--voxctrl-has-live-text, 0) * (1 - var(--voxctrl-live-split, 0)));
+}
+
+.gp-live-split {
+  opacity: calc(var(--voxctrl-live-enabled, 1) * var(--voxctrl-has-live-text, 0) * var(--voxctrl-live-split, 0));
+}
+
+/* Still-changing words take the living state color, softened. */
+.gp-tentative {
+  color: rgba(var(--wr), var(--wg), var(--wb), 0.75);
+  transition: color 0.25s ease;
 }

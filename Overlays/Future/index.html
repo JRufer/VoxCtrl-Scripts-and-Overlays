@@ -22,6 +22,16 @@
 
   See style.css for how these drive the entrance/exit wipe, the status
   stamp, the command line, and the waveform.
+  LIVE TEXT
+  ─────────
+  A two-line stream between the waveform and the command line shows the
+  words being transcribed while you speak: VoxCtrl writes the whole
+  transcript into [data-voxctrl-live-text] and, since 0.8.4, the settled and
+  still-changing words separately into [data-voxctrl-live-committed] and
+  [data-voxctrl-live-tentative] (--voxctrl-live-split is 1 there, so the CSS
+  shows that copy and dims the tentative words). With live text switched off
+  in Settings (--voxctrl-live-enabled 0) the card keeps its original height.
+
 -->
 <link rel="stylesheet" href="style.css">
 
@@ -155,6 +165,24 @@
       <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
       <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+    </div>
+
+    <!-- Live transcript stream (two lines, newest at the bottom) between the
+         waveform and the command line. VoxCtrl fills the marked elements;
+         see LIVE TEXT at the top. -->
+    <div class="vc-cyber-stream">
+      <span class="vc-cyber-stream-caret">&rsaquo;</span>
+      <div class="vc-cyber-stream-box">
+        <div class="vc-cyber-stream-text vc-cyber-stream-whole" data-voxctrl-live-text></div>
+        <div class="vc-cyber-stream-text vc-cyber-stream-split"><div><span data-voxctrl-live-committed></span> <span class="vc-cyber-tentative" data-voxctrl-live-tentative></span></div></div>
+        <div class="vc-cyber-stream-wait">
+          <span class="w-init">// handshake...</span>
+          <span class="w-rec">// awaiting voice input_</span>
+          <span class="w-proc">// decoding stream...</span>
+          <span class="w-speak">// output channel open</span>
+          <span class="w-mcp">// mcp channel open</span>
+        </div>
+      </div>
     </div>
 
     <!-- Command line: {{target}} is VoxCtrl's live routing-target

@@ -14,8 +14,12 @@
 
   LIVE TEXT
   ─────────
-  The element carrying the live-text attribute (see the text area below) is
-  filled by VoxCtrl with the in-progress transcript — an overlay can't run
+  The elements carrying the live-text attributes (see the text area below) are
+  filled by VoxCtrl with the in-progress transcript. Since 0.8.4 it is split
+  into committed words (settled) and tentative words (still being corrected,
+  shown dimmer); --voxctrl-live-split tells the CSS which version it is
+  talking to, and --voxctrl-live-enabled (0 when live text is switched off in
+  Settings) collapses the pill back to its single top row. The element — an overlay can't run
   script, so VoxCtrl writes it for us. Having that attribute is also what
   tells VoxCtrl to run the extra mid-recording transcription that produces
   it, so the cost is only paid by overlays that ask for it. Until words
@@ -73,7 +77,11 @@
         <span class="dp-status-label dp-s-speak">Speaking…</span>
         <span class="dp-status-label dp-s-mcp">Listening for MCP…</span>
       </div>
-      <div class="dp-live" data-voxctrl-live-text></div>
+      <!-- The transcript twice: split into committed and tentative words
+           (VoxCtrl 0.8.4+, which sets --voxctrl-live-split to 1), and whole
+           for older versions. CSS shows exactly one of them. -->
+      <div class="dp-live dp-live-whole" data-voxctrl-live-text></div>
+      <div class="dp-live dp-live-split"><span data-voxctrl-live-committed></span> <span class="dp-tentative" data-voxctrl-live-tentative></span></div>
     </div>
   </div>
 </div>
