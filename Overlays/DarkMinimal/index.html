@@ -33,6 +33,17 @@
   behind the bar, the living-color tint on the dot/bars/text, and the
   red bubble + bar-matrix waveform reacting directly to
   --voxctrl-audio-level.
+  LIVE TEXT
+  ─────────
+  The caption capsule under the bar shows the words being transcribed while
+  you speak: VoxCtrl writes the whole transcript into [data-voxctrl-live-text]
+  and, since 0.8.4, the settled and still-changing words separately into
+  [data-voxctrl-live-committed] and [data-voxctrl-live-tentative]
+  (--voxctrl-live-split is 1 there, so the CSS shows that copy and dims the
+  tentative words). --voxctrl-live-enabled is 0 when live text is switched off
+  in Settings, which hides the capsule; --voxctrl-has-live-text swaps the
+  status line for the words once they arrive.
+
 -->
 <link rel="stylesheet" href="style.css">
 <div class="dm-scene">
@@ -71,5 +82,22 @@
       <span class="dm-target-label">Target:</span>
       <span class="dm-target-name">{{target}}</span>
     </div>
+  </div>
+
+  <!-- Live caption: a slim companion capsule under the bar, one line, newest
+       words at the right edge and older ones fading off the left. VoxCtrl
+       fills the marked elements (see the LIVE TEXT note at the top). The
+       capsule only exists while live text is switched on in Settings
+       (--voxctrl-live-enabled), so with it off this is the original bar. -->
+  <div class="dm-caption">
+    <div class="dm-caption-status">
+      <span class="dm-status-label dm-s-init">Connecting…</span>
+      <span class="dm-status-label dm-s-rec">Listening…</span>
+      <span class="dm-status-label dm-s-proc">Transcribing…</span>
+      <span class="dm-status-label dm-s-speak">Speaking…</span>
+      <span class="dm-status-label dm-s-mcp">Listening for MCP…</span>
+    </div>
+    <div class="dm-caption-line dm-caption-whole"><span data-voxctrl-live-text></span></div>
+    <div class="dm-caption-line dm-caption-split"><span data-voxctrl-live-committed></span>&nbsp;<span class="dm-tentative" data-voxctrl-live-tentative></span></div>
   </div>
 </div>

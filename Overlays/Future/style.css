@@ -59,7 +59,8 @@
 
   position: relative;
   width: 560px;
-  height: 110px;
+  /* Taller by the transcript stream while live text is on. */
+  height: calc(110px + 34px * var(--voxctrl-live-enabled, 1));
   border-radius: 10px;
   overflow: hidden;
   background:
@@ -188,7 +189,7 @@
 
 @keyframes vc-cyber-scan {
   from { top: -20px; }
-  to { top: 110px; }
+  to { top: 100%; }
 }
 
 /* ---------------------------------------------------------------------
@@ -449,3 +450,97 @@
 .vc-cyber-cmd-action > .a-proc { opacity: var(--proc, 0); }
 .vc-cyber-cmd-action > .a-speak { opacity: var(--speak, 0); }
 .vc-cyber-cmd-action > .a-mcp { opacity: var(--mcp, 0); }
+
+/* ---------------------------------------------------------------------
+   Live transcript stream: two lines of mono text under the waveform,
+   newest words at the bottom. Settled words burn bright; words the engine
+   may still correct glow dimmer. Hidden while live text is switched off.
+   --------------------------------------------------------------------- */
+.vc-cyber-stream {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 84px;
+  height: 26px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  opacity: var(--voxctrl-live-enabled, 1);
+}
+
+.vc-cyber-stream-caret {
+  flex: none;
+  color: rgba(234, 255, 0, 0.8);
+  font-size: 13px;
+  line-height: 13px;
+  font-weight: 800;
+  text-shadow: 0 0 6px rgba(234, 255, 0, 0.5);
+}
+
+.vc-cyber-stream-box {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 26px;
+}
+
+.vc-cyber-stream-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 10.5px;
+  line-height: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #fffbe0;
+  /* Dark halo first, so the circuit traces behind never read as strikethrough. */
+  text-shadow: 0 0 3px #060708, 0 0 3px #060708, 0 0 6px rgba(234, 255, 0, 0.35);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 5px);
+  transition: opacity 0.2s ease;
+}
+
+/* Exactly one copy shows: split where VoxCtrl fills it, whole on older versions. */
+.vc-cyber-stream-whole {
+  opacity: calc(var(--voxctrl-has-live-text, 0) * (1 - var(--voxctrl-live-split, 0)));
+}
+
+.vc-cyber-stream-split {
+  opacity: calc(var(--voxctrl-has-live-text, 0) * var(--voxctrl-live-split, 0));
+}
+
+.vc-cyber-tentative {
+  color: rgba(234, 255, 0, 0.6);
+  text-shadow: 0 0 3px #060708, 0 0 3px #060708;
+  transition: color 0.25s ease;
+}
+
+/* Placeholder until the first words arrive (stacked, faded by state). */
+.vc-cyber-stream-wait {
+  position: absolute;
+  inset: 0;
+  opacity: calc(1 - var(--voxctrl-has-live-text, 0));
+  transition: opacity 0.2s ease;
+}
+
+.vc-cyber-stream-wait > span {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-size: 10px;
+  line-height: 13px;
+  letter-spacing: 0.06em;
+  color: rgba(234, 255, 0, 0.5);
+  text-shadow: 0 0 3px #060708, 0 0 3px #060708, 0 0 3px #060708;
+  white-space: nowrap;
+  transition: opacity 0.15s ease;
+}
+.vc-cyber-stream-wait > .w-init { opacity: var(--init, 0); }
+.vc-cyber-stream-wait > .w-rec { opacity: var(--rec, 0); }
+.vc-cyber-stream-wait > .w-proc { opacity: var(--proc, 0); }
+.vc-cyber-stream-wait > .w-speak { opacity: var(--speak, 0); }
+.vc-cyber-stream-wait > .w-mcp { opacity: var(--mcp, 0); }

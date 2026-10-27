@@ -493,3 +493,59 @@
   0%, 100% { opacity: 0.5; }
   50% { opacity: 0.95; }
 }
+
+/* ---------------------------------------------------------------------
+   Live transcript in the DATA STREAM box. The readout lines keep their
+   blink (same staggered timing as before) until the first words arrive;
+   then they fade out and the words take their place.
+   --------------------------------------------------------------------- */
+.tng-tbox-stream {
+  position: relative;
+}
+
+.tng-tlines {
+  opacity: calc(1 - var(--voxctrl-has-live-text, 0) * var(--voxctrl-live-enabled, 1));
+  transition: opacity 0.2s ease;
+}
+/* Wrapped in .tng-tlines, the lines are children 1-4 rather than 2-5:
+   keep each one's original blink offset. */
+.tng-tlines .tng-tline:nth-child(1) { animation-delay: -0.4s; }
+.tng-tlines .tng-tline:nth-child(2) { animation-delay: -1.1s; }
+.tng-tlines .tng-tline:nth-child(3) { animation-delay: -1.7s; }
+.tng-tlines .tng-tline:nth-child(4) { animation-delay: -2.3s; }
+
+.tng-stream {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 16px;
+  bottom: 5px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-family: 'Consolas', 'DejaVu Sans Mono', 'Liberation Mono', monospace;
+  font-size: 8.5px;
+  line-height: 11px;
+  font-weight: 700;
+  color: #cfeefc;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 4px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 4px);
+  transition: opacity 0.2s ease;
+}
+
+/* Exactly one copy shows: split where VoxCtrl fills it, whole on older versions. */
+.tng-stream-whole {
+  opacity: calc(var(--voxctrl-live-enabled, 1) * var(--voxctrl-has-live-text, 0) * (1 - var(--voxctrl-live-split, 0)));
+}
+
+.tng-stream-split {
+  opacity: calc(var(--voxctrl-live-enabled, 1) * var(--voxctrl-has-live-text, 0) * var(--voxctrl-live-split, 0));
+}
+
+/* Still-changing words in LCARS amber. */
+.tng-tentative {
+  color: #f2a765;
+  transition: color 0.25s ease;
+}

@@ -29,11 +29,13 @@ body {
 .cyber-modal {
   position: relative;
   width: 480px;
-  height: 280px;
+  /* Taller by the transcript readout while live text is on; the extra
+     bottom padding keeps the header and waveform exactly where they were. */
+  height: calc(280px + 56px * var(--voxctrl-live-enabled, 1));
   background-color: #2b333a;
   border: 2px solid #3de3e5;
   border-radius: 28px;
-  padding: 24px 28px 22px;
+  padding: 24px 28px calc(22px + 56px * var(--voxctrl-live-enabled, 1));
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -201,4 +203,66 @@ animation: waveGradientFlow 3s infinite linear;
   100% {
     transform: scaleY(calc(0.08 + (var(--voxctrl-audio-level) * 1.05)));
   }
+}
+
+/* Live transcript readout: same inset material as the waveform window. */
+.readout-panel {
+  position: absolute;
+  z-index: 2;
+  left: 28px;
+  right: 28px;
+  bottom: 22px;
+  height: 46px;
+  background-color: #24292f;
+  border-radius: 14px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+  opacity: var(--voxctrl-live-enabled, 1);
+}
+
+.readout-text,
+.readout-wait {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 6px;
+  bottom: 7px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.6px;
+  transition: opacity 0.2s ease;
+}
+
+.readout-text {
+  color: #d6fbfc;
+  text-shadow: 0 0 6px rgba(56, 225, 229, 0.3);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 5px);
+}
+
+/* Exactly one copy shows: split where VoxCtrl fills it, whole on older versions. */
+.readout-whole {
+  opacity: calc(var(--voxctrl-has-live-text, 0) * (1 - var(--voxctrl-live-split, 0)));
+}
+
+.readout-split {
+  opacity: calc(var(--voxctrl-has-live-text, 0) * var(--voxctrl-live-split, 0));
+}
+
+/* Words the engine may still correct, in the waveform's violet. */
+.readout-tentative {
+  color: #b98cf6;
+  text-shadow: none;
+  transition: color 0.25s ease;
+}
+
+.readout-wait {
+  color: rgba(61, 227, 229, 0.4);
+  opacity: calc(1 - var(--voxctrl-has-live-text, 0));
 }

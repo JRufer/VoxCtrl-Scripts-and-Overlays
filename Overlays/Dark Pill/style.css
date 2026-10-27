@@ -23,7 +23,8 @@ html, body {
   position: relative;
   display: inline-block;
   width: 300px;
-  height: 112px;
+  /* Collapses to the top row alone when live text is switched off. */
+  height: calc(56px + 56px * var(--voxctrl-live-enabled, 1));
   pointer-events: none;
   user-select: none;
 }
@@ -97,7 +98,7 @@ html, body {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: 0 18px 12px;
+  padding: 0 18px calc(12px * var(--voxctrl-live-enabled, 1));
   box-sizing: border-box;
   border-radius: 14px;
   background: rgba(12, 12, 16, 0.72);
@@ -227,6 +228,7 @@ html, body {
   /* Lines scrolling out of the top fade rather than being cut mid-glyph. */
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px);
   mask-image: linear-gradient(to bottom, transparent 0, #000 10px);
+  opacity: var(--voxctrl-live-enabled, 1);
 }
 
 /* VoxCtrl fills this with the transcript so far. Bottom-aligned inside the
@@ -242,6 +244,27 @@ html, body {
   overflow-wrap: anywhere;
   opacity: var(--voxctrl-has-live-text, 0);
   transition: opacity 0.2s ease;
+}
+
+/* Exactly one of the two copies shows: the split one where VoxCtrl fills it,
+ *  the whole-text one on older versions. Both sit bottom-aligned in the
+ *  same spot. */
+.dp-live-whole {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  opacity: calc(var(--voxctrl-has-live-text, 0) * (1 - var(--voxctrl-live-split, 0)));
+}
+
+.dp-live-split {
+  opacity: calc(var(--voxctrl-has-live-text, 0) * var(--voxctrl-live-split, 0));
+}
+
+/* Words the engine may still correct: dimmer until they settle. */
+.dp-tentative {
+  color: rgba(242, 243, 247, 0.45);
+  transition: color 0.25s ease;
 }
 
 /* Status line, shown only until the first words arrive. */

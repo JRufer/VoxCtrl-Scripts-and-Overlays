@@ -20,14 +20,16 @@ html, body {
   position: relative;
   display: inline-block;
   width: 300px;
-  height: 56px;
+  /* The bar, plus the caption capsule below it while live text is on. */
+  height: calc(56px + 34px * var(--voxctrl-live-enabled, 1));
   pointer-events: none;
   user-select: none;
 }
 
 .dm-scene,
 .dm-glow,
-.dm-pill {
+.dm-pill,
+.dm-caption {
   /* ---- Mutually-exclusive state flags (priority chain) ----
    *    Multiple --voxctrl-* booleans can technically be 1 at once, but we
    *    want exactly one "current" state driving color/text/animation.
@@ -67,7 +69,9 @@ html, body {
  *  mic volume. */
 .dm-glow {
   position: absolute;
-  inset: -18px;
+  /* Sized to the bar itself, so the caption below doesn't reshape it. */
+  inset: -18px -18px auto -18px;
+  height: 92px;
   border-radius: 44px;
   background: radial-gradient(
     ellipse at center,
@@ -94,7 +98,7 @@ html, body {
   align-items: center;
   gap: 12px;
   width: 100%;
-  height: 100%;
+  height: 56px;
   padding: 0 18px;
   box-sizing: border-box;
   border-radius: 28px;
@@ -198,3 +202,96 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ============================= Live caption capsule ============================= */
+
+/* A slimmer, inset sibling of the bar: same glass, same iris entrance (a beat
+ *  later, so it reads as following the bar out), one line of text. Hidden
+ *  entirely while live text is switched off. */
+.dm-caption {
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  top: 64px;
+  height: 26px;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border-radius: 13px;
+  background: rgba(12, 12, 16, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
+  overflow: hidden;
+  opacity: var(--voxctrl-live-enabled, 1);
+  clip-path: inset(
+    0 calc(50% * (1 - var(--active, 0))) 0 calc(50% * (1 - var(--active, 0)))
+    round 13px
+  );
+  transition: clip-path 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.08s;
+}
+
+/* One line: the text hugs the right edge, so as it grows past the width
+ *  the oldest words slide out of the left, where a fade softens the cut. */
+.dm-caption-line {
+  position: absolute;
+  inset: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: #f2f3f7;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 22px);
+  mask-image: linear-gradient(to right, transparent 0, #000 22px);
+  transition: opacity 0.2s ease;
+}
+
+.dm-caption-line > span {
+  flex-shrink: 0;
+}
+
+/* Exactly one copy shows: split where VoxCtrl fills it, whole on older versions. */
+.dm-caption-whole {
+  opacity: calc(var(--voxctrl-has-live-text, 0) * (1 - var(--voxctrl-live-split, 0)));
+}
+
+.dm-caption-split {
+  opacity: calc(var(--voxctrl-has-live-text, 0) * var(--voxctrl-live-split, 0));
+}
+
+/* Words the engine may still correct: dimmer until they settle. */
+.dm-tentative {
+  color: rgba(242, 243, 247, 0.45);
+  transition: color 0.25s ease;
+}
+
+/* Status line until the first words arrive (pre-rendered, faded by state). */
+.dm-caption-status {
+  position: absolute;
+  inset: 0 14px;
+  opacity: calc(1 - var(--voxctrl-has-live-text, 0));
+  transition: opacity 0.2s ease;
+}
+
+.dm-status-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 24px;
+  font-size: 10.5px;
+  font-style: italic;
+  color: rgba(220, 222, 230, 0.55);
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.dm-s-init  { opacity: var(--init); }
+.dm-s-rec   { opacity: var(--rec); }
+.dm-s-proc  { opacity: var(--proc); }
+.dm-s-speak { opacity: var(--speak); }
+.dm-s-mcp   { opacity: var(--mcp); }
